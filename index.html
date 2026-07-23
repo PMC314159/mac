@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#6d617c" />
+  <title>Pair Archive — 페어 서사 아카이브</title>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link
+    rel="stylesheet"
+    as="style"
+    crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --page-bg: #16131d;
+      --editor-panel: rgba(255, 255, 255, 0.08);
+      --editor-border: rgba(255, 255, 255, 0.12);
+      --editor-text: #f7f3fb;
+      --editor-muted: #bcb4c9;
+      --editor-accent: #b995ca;
+
+      --wallpaper-1: #675d78;
+      --wallpaper-2: #ba8c9f;
+      --window: rgba(249, 247, 251, 0.94);
+      --window-line: rgba(71, 53, 82, 0.13);
+      --ink: #34273e;
+      --muted: #776a80;
+      --accent: #a77baf;
+      --accent-dark: #6b4d77;
+      --accent-soft: #e7d8ea;
+      --card: rgba(255, 255, 255, 0.86);
+      --card-strong: rgba(255, 255, 255, 0.96);
+      --shadow: 0 22px 70px rgba(33, 24, 43, 0.28);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(174, 124, 183, 0.18), transparent 32%),
+        radial-gradient(circle at 90% 20%, rgba(104, 139, 183, 0.13), transparent 30%),
+        var(--page-bg);
+      color: var(--editor-text);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(22, 19, 29, 0.78);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      min-width: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--editor-muted);
+      font-size: 12px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .icon-btn {
+      border: 0;
+      border-radius: 14px;
+      transition: 0.2s ease;
+    }
+
+    .primary-btn {
+      padding: 12px 18px;
+      color: #2e2235;
+      background: linear-gradient(135deg, #f2dff4, #c6a4d1);
+      font-weight: 800;
+      box-shadow: 0 10px 28px rgba(183, 146, 198, 0.22);
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(183, 146, 198, 0.3);
+    }
+
+    .ghost-btn {
+      padding: 11px 15px;
+      color: var(--editor-text);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ghost-btn:hover {
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(300px, 370px) minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px;
+      align-items: start;
+    }
+
+    .editor {
+      position: sticky;
+      top: 92px;
+      max-height: calc(100vh - 112px);
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid var(--editor-border);
+      border-radius: 24px;
+      background: var(--editor-panel);
+      backdrop-filter: blur(18px);
+      scrollbar-width: thin;
+    }
+
+    .editor::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .editor::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+    }
+
+    .editor-section {
+      margin-bottom: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+      overflow: hidden;
+    }
+
+    .editor-section summary {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 15px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .editor-section summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .editor-section summary::after {
+      content: "＋";
+      color: var(--editor-muted);
+      font-size: 17px;
+    }
+
+    .editor-section[open] summary::after {
+      content: "－";
+    }
+
+    .section-body {
+      padding: 0 14px 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .field label,
+    .mini-label {
+      color: var(--editor-muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      outline: none;
+      padding: 11px 12px;
+      color: var(--editor-text);
+      background: rgba(12, 10, 17, 0.48);
+      transition: 0.2s ease;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(204, 171, 219, 0.7);
+      box-shadow: 0 0 0 3px rgba(177, 132, 195, 0.13);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 78px;
+      line-height: 1.55;
+    }
+
+    .field input[type="file"] {
+      padding: 8px;
+      font-size: 11px;
+    }
+
+    .field input[type="range"] {
+      padding: 0;
+      accent-color: #c5a0d0;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .editor-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .editor-card {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .editor-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .editor-card-title {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .small-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mini-btn {
+      min-width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 9px;
+      color: var(--editor-text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .mini-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .mini-btn.danger:hover {
+      background: rgba(238, 104, 117, 0.22);
+    }
+
+    .add-row-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 11px;
+      border: 1px dashed rgba(216, 188, 226, 0.42);
+      border-radius: 13px;
+      color: #e7d7ed;
+      background: rgba(184, 142, 201, 0.08);
+      font-weight: 800;
+    }
+
+    .add-row-btn:hover {
+      background: rgba(184, 142, 201, 0.14);
+    }
+
+    .stage {
+      min-width: 0;
+      overflow: auto;
+      padding: 10px 8px 30px;
+    }
+
+    .stage-note {
+      max-width: 1180px;
+      margin: 0 auto 10px;
+      color: var(--editor-muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .preview-wrap {
+      display: flex;
+      justify-content: center;
+      min-width: 960px;
+    }
+
+    /* =========================
+       CAPTURE AREA
+    ========================== */
+
+    .archive-scene {
+      position: relative;
+      width: 1180px;
+      min-height: 760px;
+      padding: 34px;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        linear-gradient(140deg, rgba(24, 18, 31, 0.12), rgba(24, 18, 31, 0.04)),
+        radial-gradient(circle at 13% 14%, rgba(255, 220, 232, 0.5), transparent 32%),
+        linear-gradient(135deg, var(--wallpaper-1), var(--wallpaper-2));
+      isolation: isolate;
+    }
+
+    .archive-scene::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image: var(--custom-wallpaper, none);
+      background-size: cover;
+      background-position: center;
+      opacity: var(--wallpaper-opacity, 0);
+      filter: blur(var(--wallpaper-blur, 0px)) brightness(var(--wallpaper-brightness, 0.72));
+      transform: scale(1.04);
+    }
+
+    .archive-scene::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(180deg, rgba(30, 22, 38, 0.08), rgba(30, 22, 38, 0.2)),
+        radial-gradient(circle at 85% 10%, rgba(255, 255, 255, 0.18), transparent 28%);
+      pointer-events: none;
+    }
+
+    .mac-window {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 30px;
+      background: var(--window);
+      box-shadow: var(--shadow);
+    }
+
+    .mac-topbar {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 52px;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--window-line);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .traffic-lights {
+      position: absolute;
+      left: 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .traffic-lights span {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .traffic-lights span:nth-child(1) { background: #ff6b5f; }
+    .traffic-lights span:nth-child(2) { background: #f7bb45; }
+    .traffic-lights span:nth-child(3) { background: #58b66e; }
+
+    .window-title {
+      max-width: 70%;
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .window-date {
+      position: absolute;
+      right: 20px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .mac-body {
+      display: grid;
+      grid-template-columns: 182px minmax(0, 1fr) 250px;
+      min-height: 660px;
+    }
+
+    .finder-sidebar {
+      padding: 18px 14px;
+      border-right: 1px solid var(--window-line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(247, 240, 247, 0.72));
+    }
+
+    .sidebar-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 11px;
+      border-radius: 13px;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .sidebar-group {
+      margin-top: 12px;
+    }
+
+    .sidebar-label {
+      margin: 16px 8px 7px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .sidebar-item.active {
+      color: var(--accent-dark);
+      background: var(--accent-soft);
+    }
+
+    .sidebar-icon {
+      display: grid;
+      place-items: center;
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      color: var(--accent-dark);
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 10px;
+    }
+
+    .sidebar-item-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.66);
+      font-size: 9px;
+    }
+
+    .archive-main {
+      min-width: 0;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(248, 245, 249, 0.7), rgba(243, 238, 246, 0.92));
+    }
+
+    .hero-card {
+      position: relative;
+      min-height: 310px;
+      overflow: hidden;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.24), transparent 35%),
+        linear-gradient(135deg, #c8b5cb, #8f789b);
+    }
+
+    .hero-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: var(--hero-x, 50%) var(--hero-y, 50%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .hero-image.has-image {
+      opacity: 1;
+    }
+
+    .hero-tint {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(33, 21, 39, 0.08), rgba(33, 21, 39, 0.5)),
+        linear-gradient(90deg, rgba(33, 21, 39, 0.25), transparent 70%);
+    }
+
+    .hero-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: 26px;
+      right: 26px;
+      bottom: 23px;
+      color: white;
+    }
+
+    .hero-kicker {
+      margin-bottom: 8px;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: 31px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      text-shadow: 0 3px 16px rgba(24, 17, 30, 0.25);
+    }
+
+    .hero-subtitle {
+      max-width: 85%;
+      margin: 10px 0 0;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .timeline-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin: 22px 2px 11px;
+    }
+
+    .timeline-heading h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .timeline-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .timeline-list {
+      position: relative;
+      display: grid;
+      gap: 12px;
+    }
+
+    .timeline-list::before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      bottom: 18px;
+      left: 66px;
+      width: 1px;
+      background: linear-gradient(var(--accent), rgba(167, 123, 175, 0.12));
+    }
+
+    .story-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) 118px;
+      gap: 15px;
+      min-height: 112px;
+      padding: 12px;
+      border: 1px solid rgba(97, 73, 107, 0.09);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: 0 8px 22px rgba(54, 39, 62, 0.06);
+    }
+
+    .story-card::before {
+      content: "";
+      position: absolute;
+      top: 25px;
+      left: 62px;
+      width: 9px;
+      height: 9px;
+      border: 3px solid var(--accent-soft);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9);
+      transform: translateX(-50%);
+      z-index: 2;
+    }
+
+    .story-time {
+      padding-top: 8px;
+      color: var(--accent-dark);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.35;
+      text-align: right;
+      word-break: keep-all;
+    }
+
+    .story-copy {
+      padding: 5px 2px 4px 5px;
+      min-width: 0;
+    }
+
+    .story-index {
+      margin-bottom: 4px;
+      color: var(--accent);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+    }
+
+    .story-copy h3 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    .story-copy p {
+      display: -webkit-box;
+      margin: 7px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      white-space: pre-line;
+    }
+
+    .story-visual {
+      position: relative;
+      min-height: 86px;
+      overflow: hidden;
+      border-radius: 13px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.7), transparent 28%),
+        linear-gradient(135deg, var(--accent-soft), #c2b4cc);
+    }
+
+    .story-visual img {
+      width: 100%;
+      height: 100%;
+      min-height: 86px;
+      object-fit: cover;
+    }
+
+    .story-visual-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(84, 62, 94, 0.55);
+      font-size: 20px;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px 14px 18px 0;
+      background:
+        linear-gradient(180deg, rgba(248, 245, 249, 0.72), rgba(242, 237, 245, 0.96));
+    }
+
+    .pair-card,
+    .tags-card,
+    .music-card,
+    .quote-card {
+      border: 1px solid rgba(86, 62, 97, 0.08);
+      border-radius: 18px;
+      background: var(--card-strong);
+      box-shadow: 0 8px 22px rgba(54, 39, 62, 0.05);
+    }
+
+    .pair-card {
+      padding: 15px;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    }
+
+    .pair-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .pair-code {
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .pair-date {
+      margin-top: 6px;
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .heart-badge {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      flex: 0 0 auto;
+      border-radius: 11px;
+      color: var(--accent-dark);
+      background: rgba(255, 255, 255, 0.82);
+      font-size: 14px;
+    }
+
+    .pair-description {
+      margin: 12px 0 0;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 9px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .tags-card {
+      padding: 14px;
+    }
+
+    .panel-title {
+      margin: 0 0 10px;
+      font-size: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      padding: 5px 8px;
+      border: 1px solid var(--accent-soft);
+      border-radius: 999px;
+      color: var(--accent-dark);
+      background: rgba(255, 255, 255, 0.82);
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .music-card {
+      overflow: hidden;
+    }
+
+    .now-playing {
+      position: relative;
+      min-height: 156px;
+      padding: 14px;
+      overflow: hidden;
+      color: white;
+      background:
+        linear-gradient(180deg, rgba(31, 20, 37, 0.18), rgba(31, 20, 37, 0.78)),
+        linear-gradient(135deg, #8c769a, #3c3146);
+    }
+
+    .now-playing-cover {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+    }
+
+    .now-playing-cover.has-image {
+      opacity: 1;
+    }
+
+    .now-playing-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(31, 20, 37, 0.08), rgba(31, 20, 37, 0.82));
+    }
+
+    .now-playing-copy {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 13px;
+    }
+
+    .now-label {
+      margin-bottom: 7px;
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+    }
+
+    .now-title {
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .now-artist {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 8px;
+    }
+
+    .progress {
+      height: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .progress > span {
+      display: block;
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: white;
+    }
+
+    .player-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 13px;
+      margin-top: 10px;
+      font-size: 10px;
+    }
+
+    .play-main {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 50%;
+      color: var(--accent-dark);
+      background: white;
+      font-size: 10px;
+    }
+
+    .playlist {
+      display: grid;
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .song-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 25px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px;
+      border-radius: 11px;
+    }
+
+    .song-row.active {
+      background: var(--accent-soft);
+    }
+
+    .song-cover {
+      width: 34px;
+      height: 34px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent-soft), #b8a9c4);
+    }
+
+    .song-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .song-info {
+      min-width: 0;
+    }
+
+    .song-title {
+      overflow: hidden;
+      font-size: 9px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .song-artist {
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 7px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .song-play {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--accent-dark);
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 8px;
+    }
+
+    .quote-card {
+      padding: 14px;
+    }
+
+    .quote-mark {
+      color: var(--accent);
+      font-size: 24px;
+      line-height: 0.8;
+    }
+
+    .quote-text {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .archive-footer {
+      padding: 11px 4px 0;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 9px;
+      text-align: center;
+      letter-spacing: 0.06em;
+    }
+
+    /* Themes */
+    .theme-blue {
+      --wallpaper-1: #52677d;
+      --wallpaper-2: #9cb6c8;
+      --accent: #6e8fad;
+      --accent-dark: #3f607a;
+      --accent-soft: #dce8f0;
+    }
+
+    .theme-rose {
+      --wallpaper-1: #7a5d67;
+      --wallpaper-2: #c994a4;
+      --accent: #b9788e;
+      --accent-dark: #7d4b5d;
+      --accent-soft: #f0dce3;
+    }
+
+    .theme-moss {
+      --wallpaper-1: #52645c;
+      --wallpaper-2: #a5b69d;
+      --accent: #6f927c;
+      --accent-dark: #496758;
+      --accent-soft: #dce9df;
+    }
+
+    .theme-night {
+      --wallpaper-1: #2b2942;
+      --wallpaper-2: #77718e;
+      --accent: #7a70a0;
+      --accent-dark: #4b4569;
+      --accent-soft: #e0dff0;
+    }
+
+    .export-mode {
+      width: 1400px !important;
+      padding: 42px !important;
+    }
+
+    .export-mode .mac-body {
+      grid-template-columns: 215px minmax(0, 1fr) 300px;
+    }
+
+    .export-mode .hero-card {
+      min-height: 370px;
+    }
+
+    .export-mode .story-card {
+      grid-template-columns: 65px minmax(0, 1fr) 145px;
+      min-height: 132px;
+    }
+
+    .export-mode .timeline-list::before {
+      left: 79px;
+    }
+
+    .export-mode .story-card::before {
+      left: 75px;
+    }
+
+    /* Export modal */
+    .export-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(8, 7, 11, 0.82);
+      backdrop-filter: blur(16px);
+    }
+
+    .export-modal.show {
+      display: grid;
+    }
+
+    .export-dialog {
+      width: min(920px, 96vw);
+      max-height: 92vh;
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      background: #1d1924;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .export-dialog-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .export-dialog-head h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .export-preview {
+      display: block;
+      width: 100%;
+      border-radius: 14px;
+      background: #0f0d13;
+    }
+
+    .export-dialog-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .export-tip {
+      margin: 10px 2px 0;
+      color: var(--editor-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 120;
+      padding: 11px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 999px;
+      color: white;
+      background: rgba(24, 20, 31, 0.9);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 12px);
+      transition: 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 980px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .editor {
+        position: static;
+        max-height: none;
+      }
+
+      .stage-note {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-header {
+        padding: 14px;
+      }
+
+      .brand p {
+        display: none;
+      }
+
+      .workspace {
+        padding: 10px;
+      }
+
+      .editor {
+        padding: 12px;
+        border-radius: 18px;
+      }
+
+      .header-actions .ghost-btn {
+        display: none;
+      }
+
+      .primary-btn {
+        padding: 11px 13px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Pair Archive</h1>
+      <p>페어의 시간대별 서사와 테마곡을 한 장의 아카이브로 정리해 봐.</p>
+    </div>
+    <div class="header-actions">
+      <button class="ghost-btn" id="resetBtn" type="button">예시로 초기화</button>
+      <button class="primary-btn" id="exportBtn" type="button">PNG로 저장</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="editor">
+      <details class="editor-section" open>
+        <summary>기본 정보</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="pairName">페어 이름</label>
+            <input id="pairName" type="text" maxlength="40" />
+          </div>
+
+          <div class="field">
+            <label for="pairSubtitle">한 줄 소개</label>
+            <input id="pairSubtitle" type="text" maxlength="100" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="pairCode">페어 코드</label>
+              <input id="pairCode" type="text" maxlength="26" />
+            </div>
+            <div class="field">
+              <label for="anniversary">기념일</label>
+              <input id="anniversary" type="text" maxlength="24" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="pairDescription">페어 설명</label>
+            <textarea id="pairDescription" maxlength="300"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="pairQuote">대표 문장</label>
+            <textarea id="pairQuote" maxlength="180"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="pairTags">태그 — 쉼표로 구분</label>
+            <input id="pairTags" type="text" maxlength="150" />
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>메인 일러스트</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="heroUpload">메인 일러스트 업로드</label>
+            <input id="heroUpload" type="file" accept="image/*" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="heroX">가로 위치</label>
+              <input id="heroX" type="range" min="0" max="100" />
+            </div>
+            <div class="field">
+              <label for="heroY">세로 위치</label>
+              <input id="heroY" type="range" min="0" max="100" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="wallpaperUpload">바탕 화면 이미지 — 선택</label>
+            <input id="wallpaperUpload" type="file" accept="image/*" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="wallpaperOpacity">바탕 투명도</label>
+              <input id="wallpaperOpacity" type="range" min="0" max="100" />
+            </div>
+            <div class="field">
+              <label for="wallpaperBlur">바탕 흐리기</label>
+              <input id="wallpaperBlur" type="range" min="0" max="20" />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>서사 타임라인</summary>
+        <div class="section-body">
+          <div id="storyEditorList" class="editor-list"></div>
+          <button class="add-row-btn" id="addStoryBtn" type="button">＋ 서사 블럭 추가</button>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>테마곡</summary>
+        <div class="section-body">
+          <div id="songEditorList" class="editor-list"></div>
+          <button class="add-row-btn" id="addSongBtn" type="button">＋ 테마곡 추가</button>
+        </div>
+      </details>
+
+      <details class="editor-section">
+        <summary>색상과 스타일</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="themeSelect">테마</label>
+            <select id="themeSelect">
+              <option value="">Lavender</option>
+              <option value="theme-blue">Cloud Blue</option>
+              <option value="theme-rose">Dusty Rose</option>
+              <option value="theme-moss">Moss Green</option>
+              <option value="theme-night">Midnight</option>
+            </select>
+          </div>
+          <p style="margin:12px 2px 0;color:var(--editor-muted);font-size:11px;line-height:1.55;">
+            저장할 때는 왼쪽 편집창이 빠지고, 오른쪽 맥북 스타일 아카이브만 이미지로 만들어져.
+          </p>
+        </div>
+      </details>
+    </aside>
+
+    <section class="stage">
+      <p class="stage-note">미리보기는 가로형이야. 작은 화면에서는 옆으로 스크롤해서 확인할 수 있어.</p>
+
+      <div class="preview-wrap">
+        <div class="archive-scene" id="captureArea">
+          <section class="mac-window">
+            <header class="mac-topbar">
+              <div class="traffic-lights" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="window-title" id="windowTitle"></div>
+              <div class="window-date" id="windowDate"></div>
+            </header>
+
+            <div class="mac-body">
+              <aside class="finder-sidebar">
+                <div class="sidebar-title">
+                  <span>▼</span>
+                  <span>Our Archive</span>
+                </div>
+
+                <div class="sidebar-group">
+                  <div class="sidebar-item active">
+                    <span class="sidebar-icon">⌂</span>
+                    <span class="sidebar-item-text">Overview</span>
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">▧</span>
+                    <span class="sidebar-item-text">Illustrations</span>
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">♫</span>
+                    <span class="sidebar-item-text">Theme Songs</span>
+                  </div>
+                </div>
+
+                <div class="sidebar-label">Timeline</div>
+                <div id="sidebarStories"></div>
+
+                <div class="sidebar-search">
+                  <span>⌕</span>
+                  <span>Search memories</span>
+                </div>
+              </aside>
+
+              <section class="archive-main">
+                <div class="hero-card">
+                  <div class="hero-placeholder" id="heroPlaceholder">MAIN ILLUSTRATION</div>
+                  <img id="heroImage" class="hero-image" alt="" />
+                  <div class="hero-tint"></div>
+
+                  <div class="hero-copy">
+                    <div class="hero-kicker">A CHRONICLE OF US</div>
+                    <h2 class="hero-title" id="heroTitle"></h2>
+                    <p class="hero-subtitle" id="heroSubtitle"></p>
+                  </div>
+                </div>
+
+                <div class="timeline-heading">
+                  <div>
+                    <h2>Story Timeline</h2>
+                    <p>시간의 순서대로 쌓인 두 사람의 기록</p>
+                  </div>
+                  <p id="storyCount"></p>
+                </div>
+
+                <div class="timeline-list" id="timelineList"></div>
+              </section>
+
+              <aside class="right-panel">
+                <section class="pair-card">
+                  <div class="pair-card-top">
+                    <div>
+                      <div class="pair-code" id="pairCodeView"></div>
+                      <div class="pair-date" id="pairDateView"></div>
+                    </div>
+                    <div class="heart-badge">♥</div>
+                  </div>
+                  <p class="pair-description" id="pairDescriptionView"></p>
+                </section>
+
+                <section class="tags-card">
+                  <h3 class="panel-title">Search Tag</h3>
+                  <div class="tag-list" id="tagList"></div>
+                </section>
+
+                <section class="music-card">
+                  <div class="now-playing">
+                    <img id="nowPlayingCover" class="now-playing-cover" alt="" />
+                    <div class="now-playing-overlay"></div>
+                    <div class="now-playing-copy">
+                      <div class="now-label">NOW PLAYING</div>
+                      <div class="now-title" id="nowTitle"></div>
+                      <div class="now-artist" id="nowArtist"></div>
+                      <div class="progress"><span></span></div>
+                      <div class="player-controls">
+                        <span>◀</span>
+                        <button class="play-main" id="mainPlayBtn" type="button">▶</button>
+                        <span>▶</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="playlist" id="playlist"></div>
+                </section>
+
+                <section class="quote-card">
+                  <div class="quote-mark">“</div>
+                  <p class="quote-text" id="quoteView"></p>
+                </section>
+              </aside>
+            </div>
+          </section>
+
+          <footer class="archive-footer">PAIR ARCHIVE · MADE WITH OUR MEMORIES</footer>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="export-modal" id="exportModal">
+    <div class="export-dialog">
+      <div class="export-dialog-head">
+        <h3>이미지가 완성됐어</h3>
+        <button class="ghost-btn" id="closeExportBtn" type="button">닫기</button>
+      </div>
+      <img id="exportPreview" class="export-preview" alt="저장 이미지 미리보기" />
+      <div class="export-dialog-actions">
+        <button class="primary-btn" id="downloadExportBtn" type="button">PNG 다운로드</button>
+        <button class="ghost-btn" id="openExportBtn" type="button">새 탭에서 열기</button>
+      </div>
+      <p class="export-tip">
+        모바일에서 다운로드가 막히면 ‘새 탭에서 열기’를 누른 다음 이미지를 길게 눌러 저장하면 돼.
+      </p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (selector, parent = document) => parent.querySelector(selector);
+    const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
+
+    const defaultState = () => ({
+      pairName: "JUNSU × SEOWOO",
+      pairSubtitle: "서로 다른 계절을 지나 결국 같은 장면에 도착한 두 사람.",
+      pairCode: "D+ 99999 ♥",
+      anniversary: "2024. 03. 14",
+      pairDescription:
+        "조용한 사람과 다정한 사람이 만나\n서로의 하루를 오래 지켜보는 이야기.",
+      pairQuote:
+        "돌아보면 언제나 같은 자리에 네가 있었다.",
+      tags: "#첫만남, #재회, #성장, #구원, #약속",
+      heroImage: "",
+      heroX: 50,
+      heroY: 50,
+      wallpaperImage: "",
+      wallpaperOpacity: 28,
+      wallpaperBlur: 3,
+      theme: "",
+      activeSongId: 1,
+      stories: [
+        {
+          id: 1,
+          time: "봄 · 1년 전",
+          title: "처음 이름을 기억한 날",
+          description:
+            "낯선 장소에서 우연히 마주친 두 사람. 짧은 대화였지만 그날 이후 서로의 이름은 쉽게 잊히지 않았다.",
+          image: "",
+          x: 50,
+          y: 50
+        },
+        {
+          id: 2,
+          time: "여름 · 현재",
+          title: "같은 방향으로 걷기 시작하다",
+          description:
+            "각자의 사정 때문에 계속 엇갈렸지만, 결국 같은 목표를 향해 한 걸음씩 나아가기 시작했다.",
+          image: "",
+          x: 50,
+          y: 50
+        },
+        {
+          id: 3,
+          time: "겨울 · 이후",
+          title: "우리의 다음 계절",
+          description:
+            "완벽한 결말 대신 함께 살아갈 날들을 선택한다. 이전과는 다른 방식으로 서로의 곁을 지키기로 한다.",
+          image: "",
+          x: 50,
+          y: 50
+        }
+      ],
+      songs: [
+        {
+          id: 1,
+          title: "A Song for Us",
+          artist: "Artist Name",
+          lyric: "서로를 떠올리게 하는 메인 테마곡",
+          cover: "",
+          audioUrl: "",
+          audioName: ""
+        },
+        {
+          id: 2,
+          title: "After the Rain",
+          artist: "Artist Name",
+          lyric: "재회 장면을 위한 두 번째 테마곡",
+          cover: "",
+          audioUrl: "",
+          audioName: ""
+        }
+      ]
+    });
+
+    let state = defaultState();
+    let currentAudio = null;
+    let exportObjectUrl = "";
+    let exportFilename = "pair-archive.png";
+
+    const els = {
+      captureArea: $("#captureArea"),
+      windowTitle: $("#windowTitle"),
+      windowDate: $("#windowDate"),
+      heroImage: $("#heroImage"),
+      heroPlaceholder: $("#heroPlaceholder"),
+      heroTitle: $("#heroTitle"),
+      heroSubtitle: $("#heroSubtitle"),
+      sidebarStories: $("#sidebarStories"),
+      timelineList: $("#timelineList"),
+      storyCount: $("#storyCount"),
+      pairCodeView: $("#pairCodeView"),
+      pairDateView: $("#pairDateView"),
+      pairDescriptionView: $("#pairDescriptionView"),
+      tagList: $("#tagList"),
+      playlist: $("#playlist"),
+      nowPlayingCover: $("#nowPlayingCover"),
+      nowTitle: $("#nowTitle"),
+      nowArtist: $("#nowArtist"),
+      quoteView: $("#quoteView"),
+      storyEditorList: $("#storyEditorList"),
+      songEditorList: $("#songEditorList"),
+      exportModal: $("#exportModal"),
+      exportPreview: $("#exportPreview"),
+      toast: $("#toast")
+    };
+
+    const textInputs = [
+      ["pairName", "pairName"],
+      ["pairSubtitle", "pairSubtitle"],
+      ["pairCode", "pairCode"],
+      ["anniversary", "anniversary"],
+      ["pairDescription", "pairDescription"],
+      ["pairQuote", "pairQuote"],
+      ["pairTags", "tags"]
+    ];
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function readImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+
+    function hydrateEditor() {
+      textInputs.forEach(([id, key]) => {
+        const input = document.getElementById(id);
+        input.value = state[key] ?? "";
+      });
+
+      $("#heroX").value = state.heroX;
+      $("#heroY").value = state.heroY;
+      $("#wallpaperOpacity").value = state.wallpaperOpacity;
+      $("#wallpaperBlur").value = state.wallpaperBlur;
+      $("#themeSelect").value = state.theme;
+
+      renderStoryEditor();
+      renderSongEditor();
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const now = new Date();
+      els.windowTitle.textContent = state.pairName || "Untitled Pair";
+      els.windowDate.textContent = `${String(now.getFullYear()).slice(2)}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
+      els.heroTitle.textContent = state.pairName || "PAIR NAME";
+      els.heroSubtitle.textContent = state.pairSubtitle || "두 사람의 이야기를 적어 주세요.";
+
+      els.captureArea.className = `archive-scene ${state.theme}`.trim();
+      els.captureArea.style.setProperty("--hero-x", `${state.heroX}%`);
+      els.captureArea.style.setProperty("--hero-y", `${state.heroY}%`);
+      els.captureArea.style.setProperty("--wallpaper-opacity", String(state.wallpaperOpacity / 100));
+      els.captureArea.style.setProperty("--wallpaper-blur", `${state.wallpaperBlur}px`);
+      els.captureArea.style.setProperty(
+        "--custom-wallpaper",
+        state.wallpaperImage ? `url("${state.wallpaperImage}")` : "none"
+      );
+
+      if (state.heroImage) {
+        els.heroImage.src = state.heroImage;
+        els.heroImage.classList.add("has-image");
+        els.heroPlaceholder.style.display = "none";
+      } else {
+        els.heroImage.removeAttribute("src");
+        els.heroImage.classList.remove("has-image");
+        els.heroPlaceholder.style.display = "grid";
+      }
+
+      els.pairCodeView.textContent = state.pairCode || "PAIR CODE";
+      els.pairDateView.textContent = state.anniversary || "ANNIVERSARY";
+      els.pairDescriptionView.textContent =
+        state.pairDescription || "페어에 대한 짧은 설명을 적어 주세요.";
+      els.quoteView.textContent =
+        state.pairQuote || "두 사람을 상징하는 문장을 적어 주세요.";
+
+      const tags = state.tags
+        .split(",")
+        .map(tag => tag.trim())
+        .filter(Boolean);
+
+      els.tagList.innerHTML = (tags.length ? tags : ["#pair", "#archive"])
+        .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+        .join("");
+
+      els.storyCount.textContent = `${state.stories.length} SCENES`;
+
+      els.sidebarStories.innerHTML = state.stories.length
+        ? state.stories
+            .map(
+              (story, index) => `
+                <div class="sidebar-item">
+                  <span class="sidebar-icon">${String(index + 1).padStart(2, "0")}</span>
+                  <span class="sidebar-item-text">${escapeHtml(story.title || "제목 없는 서사")}</span>
+                </div>
+              `
+            )
+            .join("")
+        : `<div class="sidebar-item"><span class="sidebar-item-text">No stories</span></div>`;
+
+      els.timelineList.innerHTML = state.stories.length
+        ? state.stories
+            .map(
+              (story, index) => `
+                <article class="story-card">
+                  <div class="story-time">${escapeHtml(story.time || "시간 미정")}</div>
+                  <div class="story-copy">
+                    <div class="story-index">CHAPTER ${String(index + 1).padStart(2, "0")}</div>
+                    <h3>${escapeHtml(story.title || "제목 없는 서사")}</h3>
+                    <p>${escapeHtml(story.description || "이 시기의 이야기를 적어 주세요.")}</p>
+                  </div>
+                  <div class="story-visual">
+                    ${
+                      story.image
+                        ? `<img src="${story.image}" alt="" style="object-position:${story.x}% ${story.y}%;">`
+                        : `<div class="story-visual-placeholder">✦</div>`
+                    }
+                  </div>
+                </article>
+              `
+            )
+            .join("")
+        : `
+          <article class="story-card">
+            <div class="story-time">EMPTY</div>
+            <div class="story-copy">
+              <div class="story-index">CHAPTER 00</div>
+              <h3>서사 블럭을 추가해 주세요</h3>
+              <p>왼쪽 편집창에서 시간, 제목, 설명, 일러스트를 자유롭게 넣을 수 있어요.</p>
+            </div>
+            <div class="story-visual"><div class="story-visual-placeholder">＋</div></div>
+          </article>
+        `;
+
+      renderMusicPreview();
+    }
+
+    function renderMusicPreview() {
+      if (!state.songs.length) {
+        els.nowPlayingCover.removeAttribute("src");
+        els.nowPlayingCover.classList.remove("has-image");
+        els.nowTitle.textContent = "No theme song";
+        els.nowArtist.textContent = "테마곡을 추가해 주세요";
+        els.playlist.innerHTML = "";
+        return;
+      }
+
+      let active = state.songs.find(song => song.id === state.activeSongId);
+      if (!active) {
+        active = state.songs[0];
+        state.activeSongId = active.id;
+      }
+
+      els.nowTitle.textContent = active.title || "Untitled Song";
+      els.nowArtist.textContent = active.artist || "Unknown Artist";
+
+      if (active.cover) {
+        els.nowPlayingCover.src = active.cover;
+        els.nowPlayingCover.classList.add("has-image");
+      } else {
+        els.nowPlayingCover.removeAttribute("src");
+        els.nowPlayingCover.classList.remove("has-image");
+      }
+
+      els.playlist.innerHTML = state.songs
+        .map(
+          song => `
+            <div class="song-row ${song.id === state.activeSongId ? "active" : ""}">
+              <div class="song-cover">
+                ${song.cover ? `<img src="${song.cover}" alt="">` : ""}
+              </div>
+              <div class="song-info">
+                <div class="song-title">${escapeHtml(song.title || "Untitled Song")}</div>
+                <div class="song-artist">${escapeHtml(song.artist || "Unknown Artist")}</div>
+              </div>
+              <button class="song-play" type="button" data-play-song="${song.id}" aria-label="곡 재생">▶</button>
+            </div>
+          `
+        )
+        .join("");
+    }
+
+    function renderStoryEditor() {
+      els.storyEditorList.innerHTML = state.stories
+        .map(
+          (story, index) => `
+            <div class="editor-card" data-story-editor="${story.id}">
+              <div class="editor-card-head">
+                <div class="editor-card-title">서사 ${index + 1}</div>
+                <div class="small-actions">
+                  <button class="mini-btn" type="button" data-story-up="${story.id}" title="위로">↑</button>
+                  <button class="mini-btn" type="button" data-story-down="${story.id}" title="아래로">↓</button>
+                  <button class="mini-btn danger" type="button" data-story-delete="${story.id}" title="삭제">×</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>시간대</label>
+                <input type="text" maxlength="30" value="${escapeHtml(story.time)}" data-story-field="${story.id}:time">
+              </div>
+
+              <div class="field">
+                <label>서사 제목</label>
+                <input type="text" maxlength="60" value="${escapeHtml(story.title)}" data-story-field="${story.id}:title">
+              </div>
+
+              <div class="field">
+                <label>서사 내용</label>
+                <textarea maxlength="420" data-story-field="${story.id}:description">${escapeHtml(story.description)}</textarea>
+              </div>
+
+              <div class="field">
+                <label>서사 일러스트</label>
+                <input type="file" accept="image/*" data-story-image="${story.id}">
+              </div>
+
+              <div class="two-col">
+                <div class="field">
+                  <label>가로 위치</label>
+                  <input type="range" min="0" max="100" value="${story.x}" data-story-field="${story.id}:x">
+                </div>
+                <div class="field">
+                  <label>세로 위치</label>
+                  <input type="range" min="0" max="100" value="${story.y}" data-story-field="${story.id}:y">
+                </div>
+              </div>
+            </div>
+          `
+        )
+        .join("");
+    }
+
+    function renderSongEditor() {
+      els.songEditorList.innerHTML = state.songs
+        .map(
+          (song, index) => `
+            <div class="editor-card" data-song-editor="${song.id}">
+              <div class="editor-card-head">
+                <div class="editor-card-title">테마곡 ${index + 1}</div>
+                <div class="small-actions">
+                  <button class="mini-btn danger" type="button" data-song-delete="${song.id}" title="삭제">×</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>곡 제목</label>
+                <input type="text" maxlength="60" value="${escapeHtml(song.title)}" data-song-field="${song.id}:title">
+              </div>
+
+              <div class="field">
+                <label>아티스트</label>
+                <input type="text" maxlength="50" value="${escapeHtml(song.artist)}" data-song-field="${song.id}:artist">
+              </div>
+
+              <div class="field">
+                <label>곡 설명 / 가사 한 줄</label>
+                <textarea maxlength="180" data-song-field="${song.id}:lyric">${escapeHtml(song.lyric)}</textarea>
+              </div>
+
+              <div class="field">
+                <label>앨범 커버</label>
+                <input type="file" accept="image/*" data-song-cover="${song.id}">
+              </div>
+
+              <div class="field">
+                <label>음원 파일 — 선택</label>
+                <input type="file" accept="audio/*" data-song-audio="${song.id}">
+                <span class="mini-label">${escapeHtml(song.audioName || "업로드하지 않아도 카드에는 표시돼.")}</span>
+              </div>
+            </div>
+          `
+        )
+        .join("");
+    }
+
+    function moveItem(list, id, direction) {
+      const index = list.findIndex(item => item.id === id);
+      if (index < 0) return;
+      const target = index + direction;
+      if (target < 0 || target >= list.length) return;
+      [list[index], list[target]] = [list[target], list[index]];
+    }
+
+    function playSong(songId) {
+      const song = state.songs.find(item => item.id === songId);
+      if (!song) return;
+
+      state.activeSongId = songId;
+      renderMusicPreview();
+
+      if (!song.audioUrl) {
+        showToast("음원 파일을 업로드하면 여기서 재생할 수 있어.");
+        return;
+      }
+
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+
+      currentAudio = new Audio(song.audioUrl);
+      currentAudio.play().catch(() => {
+        showToast("브라우저가 재생을 막았어. 한 번 더 눌러 줘.");
+      });
+    }
+
+    async function waitForImages(root) {
+      const images = $$("img", root).filter(img => img.src);
+      await Promise.all(
+        images.map(
+          img =>
+            new Promise(resolve => {
+              if (img.complete) resolve();
+              else {
+                img.onload = resolve;
+                img.onerror = resolve;
+              }
+            })
+        )
+      );
+    }
+
+    async function exportImage() {
+      const button = $("#exportBtn");
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "이미지 만드는 중…";
+
+      try {
+        if (document.fonts?.ready) {
+          await document.fonts.ready;
+        }
+
+        els.captureArea.classList.add("export-mode");
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await waitForImages(els.captureArea);
+
+        const canvas = await html2canvas(els.captureArea, {
+          scale: 2,
+          backgroundColor: null,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          imageTimeout: 15000,
+          windowWidth: 1600
+        });
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png", 1));
+        if (!blob) throw new Error("이미지 변환 실패");
+
+        if (exportObjectUrl) URL.revokeObjectURL(exportObjectUrl);
+        exportObjectUrl = URL.createObjectURL(blob);
+
+        const cleanName = (state.pairName || "pair-archive")
+          .replace(/[\\/:*?"<>|]/g, "")
+          .replace(/\s+/g, "-")
+          .slice(0, 40);
+
+        exportFilename = `${cleanName || "pair-archive"}.png`;
+        els.exportPreview.src = exportObjectUrl;
+        els.exportModal.classList.add("show");
+        showToast("저장 이미지가 완성됐어.");
+      } catch (error) {
+        console.error(error);
+        alert("이미지를 만드는 중 문제가 생겼어. 이미지 용량을 조금 줄이거나 페이지를 새로고침한 뒤 다시 시도해 줘.");
+      } finally {
+        els.captureArea.classList.remove("export-mode");
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function downloadExport() {
+      if (!exportObjectUrl) return;
+      const link = document.createElement("a");
+      link.href = exportObjectUrl;
+      link.download = exportFilename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    /* 기본 입력 연결 */
+    textInputs.forEach(([id, key]) => {
+      document.getElementById(id).addEventListener("input", event => {
+        state[key] = event.target.value;
+        renderPreview();
+      });
+    });
+
+    $("#heroX").addEventListener("input", event => {
+      state.heroX = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#heroY").addEventListener("input", event => {
+      state.heroY = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#wallpaperOpacity").addEventListener("input", event => {
+      state.wallpaperOpacity = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#wallpaperBlur").addEventListener("input", event => {
+      state.wallpaperBlur = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#themeSelect").addEventListener("change", event => {
+      state.theme = event.target.value;
+      renderPreview();
+    });
+
+    $("#heroUpload").addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      state.heroImage = await readImage(file);
+      renderPreview();
+    });
+
+    $("#wallpaperUpload").addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      state.wallpaperImage = await readImage(file);
+      renderPreview();
+    });
+
+    /* 서사 편집 이벤트 위임 */
+    els.storyEditorList.addEventListener("input", event => {
+      const meta = event.target.dataset.storyField;
+      if (!meta) return;
+
+      const [idText, field] = meta.split(":");
+      const story = state.stories.find(item => item.id === Number(idText));
+      if (!story) return;
+
+      story[field] = event.target.type === "range"
+        ? Number(event.target.value)
+        : event.target.value;
+
+      renderPreview();
+    });
+
+    els.storyEditorList.addEventListener("change", async event => {
+      const id = Number(event.target.dataset.storyImage);
+      const file = event.target.files?.[0];
+      if (!id || !file) return;
+
+      const story = state.stories.find(item => item.id === id);
+      if (!story) return;
+
+      story.image = await readImage(file);
+      renderPreview();
+    });
+
+    els.storyEditorList.addEventListener("click", event => {
+      const upId = Number(event.target.dataset.storyUp);
+      const downId = Number(event.target.dataset.storyDown);
+      const deleteId = Number(event.target.dataset.storyDelete);
+
+      if (upId) {
+        moveItem(state.stories, upId, -1);
+        renderStoryEditor();
+        renderPreview();
+      }
+
+      if (downId) {
+        moveItem(state.stories, downId, 1);
+        renderStoryEditor();
+        renderPreview();
+      }
+
+      if (deleteId) {
+        state.stories = state.stories.filter(item => item.id !== deleteId);
+        renderStoryEditor();
+        renderPreview();
+      }
+    });
+
+    $("#addStoryBtn").addEventListener("click", () => {
+      const id = Date.now();
+      state.stories.push({
+        id,
+        time: "새로운 시기",
+        title: "새로운 서사",
+        description: "이 시기의 이야기를 적어 주세요.",
+        image: "",
+        x: 50,
+        y: 50
+      });
+      renderStoryEditor();
+      renderPreview();
+      requestAnimationFrame(() => {
+        const card = $(`[data-story-editor="${id}"]`);
+        card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+
+    /* 테마곡 편집 이벤트 위임 */
+    els.songEditorList.addEventListener("input", event => {
+      const meta = event.target.dataset.songField;
+      if (!meta) return;
+
+      const [idText, field] = meta.split(":");
+      const song = state.songs.find(item => item.id === Number(idText));
+      if (!song) return;
+
+      song[field] = event.target.value;
+      renderPreview();
+    });
+
+    els.songEditorList.addEventListener("change", async event => {
+      const coverId = Number(event.target.dataset.songCover);
+      const audioId = Number(event.target.dataset.songAudio);
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (coverId) {
+        const song = state.songs.find(item => item.id === coverId);
+        if (!song) return;
+        song.cover = await readImage(file);
+        renderPreview();
+      }
+
+      if (audioId) {
+        const song = state.songs.find(item => item.id === audioId);
+        if (!song) return;
+
+        if (song.audioUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(song.audioUrl);
+        }
+
+        song.audioUrl = URL.createObjectURL(file);
+        song.audioName = file.name;
+        renderSongEditor();
+        renderPreview();
+      }
+    });
+
+    els.songEditorList.addEventListener("click", event => {
+      const deleteId = Number(event.target.dataset.songDelete);
+      if (!deleteId) return;
+
+      const song = state.songs.find(item => item.id === deleteId);
+      if (song?.audioUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(song.audioUrl);
+      }
+
+      state.songs = state.songs.filter(item => item.id !== deleteId);
+
+      if (state.activeSongId === deleteId) {
+        state.activeSongId = state.songs[0]?.id ?? null;
+      }
+
+      renderSongEditor();
+      renderPreview();
+    });
+
+    $("#addSongBtn").addEventListener("click", () => {
+      const id = Date.now();
+      state.songs.push({
+        id,
+        title: "New Theme Song",
+        artist: "Artist Name",
+        lyric: "이 곡이 두 사람에게 어떤 의미인지 적어 주세요.",
+        cover: "",
+        audioUrl: "",
+        audioName: ""
+      });
+
+      if (!state.activeSongId) state.activeSongId = id;
+
+      renderSongEditor();
+      renderPreview();
+      requestAnimationFrame(() => {
+        const card = $(`[data-song-editor="${id}"]`);
+        card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+
+    els.playlist.addEventListener("click", event => {
+      const button = event.target.closest("[data-play-song]");
+      if (!button) return;
+      playSong(Number(button.dataset.playSong));
+    });
+
+    $("#mainPlayBtn").addEventListener("click", () => {
+      if (state.activeSongId) playSong(state.activeSongId);
+    });
+
+    $("#exportBtn").addEventListener("click", exportImage);
+    $("#downloadExportBtn").addEventListener("click", downloadExport);
+    $("#openExportBtn").addEventListener("click", () => {
+      if (exportObjectUrl) window.open(exportObjectUrl, "_blank", "noopener,noreferrer");
+    });
+
+    $("#closeExportBtn").addEventListener("click", () => {
+      els.exportModal.classList.remove("show");
+    });
+
+    els.exportModal.addEventListener("click", event => {
+      if (event.target === els.exportModal) {
+        els.exportModal.classList.remove("show");
+      }
+    });
+
+    $("#resetBtn").addEventListener("click", () => {
+      const ok = confirm("현재 입력한 내용을 지우고 예시 상태로 되돌릴까?");
+      if (!ok) return;
+
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+
+      state.songs.forEach(song => {
+        if (song.audioUrl?.startsWith("blob:")) URL.revokeObjectURL(song.audioUrl);
+      });
+
+      state = defaultState();
+      $("#heroUpload").value = "";
+      $("#wallpaperUpload").value = "";
+      hydrateEditor();
+    });
+
+    hydrateEditor();
+  </script>
+</body>
+</html>
