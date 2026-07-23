@@ -1,0 +1,3155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#dcebdc" />
+  <title>Pair Archive</title>
+
+  <link
+    rel="stylesheet"
+    crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --editor-bg: #171c18;
+      --editor-panel: rgba(255, 255, 255, 0.065);
+      --editor-line: rgba(255, 255, 255, 0.1);
+      --editor-text: #f6faf6;
+      --editor-muted: #b9c6bb;
+
+      --wall-a: #90af9a;
+      --wall-b: #dceacb;
+      --glass: rgba(246, 255, 247, 0.72);
+      --glass-strong: rgba(253, 255, 251, 0.91);
+      --ink: #25342a;
+      --muted: #66766a;
+      --accent: #7da188;
+      --accent-deep: #486253;
+      --accent-soft: #dcebdc;
+      --line: rgba(65, 91, 71, 0.13);
+      --shadow: 0 24px 70px rgba(38, 61, 44, 0.2);
+      --canvas-width: 1320px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--editor-text);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(151, 194, 160, 0.2), transparent 30%),
+        radial-gradient(circle at 88% 8%, rgba(218, 234, 197, 0.13), transparent 26%),
+        var(--editor-bg);
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 17px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+      background: rgba(23, 28, 24, 0.82);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.025em;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--editor-muted);
+      font-size: 12px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 9px;
+      flex-shrink: 0;
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .mini-btn,
+    .add-btn,
+    .tag-add-btn {
+      border: 0;
+      transition: 0.18s ease;
+    }
+
+    .primary-btn {
+      padding: 11px 16px;
+      border-radius: 14px;
+      color: #26332a;
+      background: linear-gradient(135deg, #eff8ed, #bcd9bf);
+      box-shadow: 0 10px 28px rgba(113, 154, 120, 0.2);
+      font-weight: 900;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .ghost-btn {
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
+      color: var(--editor-text);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .ghost-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(315px, 385px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      padding: 18px;
+    }
+
+    .editor {
+      position: sticky;
+      top: 88px;
+      max-height: calc(100vh - 106px);
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid var(--editor-line);
+      border-radius: 23px;
+      background: var(--editor-panel);
+      backdrop-filter: blur(18px);
+      scrollbar-width: thin;
+    }
+
+    .editor::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .editor::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .editor-section {
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      border-radius: 17px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .editor-section summary {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .editor-section summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .editor-section summary::after {
+      content: "＋";
+      color: var(--editor-muted);
+      font-size: 16px;
+    }
+
+    .editor-section[open] summary::after {
+      content: "－";
+    }
+
+    .section-body {
+      padding: 0 13px 13px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .field label,
+    .mini-label {
+      color: var(--editor-muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 11px;
+      outline: none;
+      color: var(--editor-text);
+      background: rgba(9, 12, 10, 0.43);
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(177, 211, 182, 0.65);
+      box-shadow: 0 0 0 3px rgba(134, 177, 141, 0.12);
+    }
+
+    .field textarea {
+      min-height: 86px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .field input[type="file"] {
+      padding: 7px;
+      font-size: 11px;
+    }
+
+    .field input[type="range"] {
+      padding: 0;
+      accent-color: #a8c9ad;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mode-option {
+      position: relative;
+    }
+
+    .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-option span {
+      display: block;
+      padding: 11px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: var(--editor-muted);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 11px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .mode-option input:checked + span {
+      color: #253429;
+      border-color: #cce1ce;
+      background: #cce1ce;
+    }
+
+    .editor-list {
+      display: grid;
+      gap: 11px;
+      margin-top: 10px;
+    }
+
+    .editor-card {
+      padding: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .editor-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+
+    .editor-card-title {
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .small-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .mini-btn {
+      min-width: 29px;
+      height: 29px;
+      border-radius: 8px;
+      color: var(--editor-text);
+      background: rgba(255, 255, 255, 0.075);
+    }
+
+    .mini-btn:hover {
+      background: rgba(255, 255, 255, 0.13);
+    }
+
+    .mini-btn.danger:hover {
+      background: rgba(227, 90, 107, 0.2);
+    }
+
+    .add-btn {
+      width: 100%;
+      margin-top: 11px;
+      padding: 10px;
+      border: 1px dashed rgba(190, 220, 193, 0.38);
+      border-radius: 12px;
+      color: #e7f1e7;
+      background: rgba(126, 161, 138, 0.075);
+      font-weight: 900;
+    }
+
+    .add-btn:hover {
+      background: rgba(126, 161, 138, 0.13);
+    }
+
+    .tag-editor {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .tag-editor-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 7px 6px 9px;
+      border: 1px solid rgba(190, 220, 193, 0.22);
+      border-radius: 999px;
+      color: #e7f1e7;
+      background: rgba(126, 161, 138, 0.09);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .tag-editor-chip button {
+      display: grid;
+      place-items: center;
+      width: 17px;
+      height: 17px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      color: #e7f1e7;
+      background: rgba(255, 255, 255, 0.09);
+      font-size: 11px;
+    }
+
+    .tag-input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .tag-input-row input {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      outline: 0;
+      color: var(--editor-text);
+      background: rgba(9, 12, 10, 0.43);
+    }
+
+    .tag-add-btn {
+      padding: 0 11px;
+      border-radius: 10px;
+      color: #253429;
+      background: #c8dfca;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .stage {
+      min-width: 0;
+      overflow: auto;
+      padding: 8px 6px 30px;
+    }
+
+    .stage-note {
+      margin: 0 auto 10px;
+      color: var(--editor-muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .preview-wrap {
+      display: flex;
+      justify-content: center;
+      min-width: var(--canvas-width);
+    }
+
+    /* =========================
+       SAVED IMAGE AREA
+    ========================== */
+
+    .desktop-canvas {
+      position: relative;
+      width: var(--canvas-width);
+      min-height: 860px;
+      padding: 24px 28px 30px;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(235, 255, 235, 0.46), transparent 30%),
+        radial-gradient(circle at 86% 14%, rgba(255, 255, 225, 0.24), transparent 25%),
+        linear-gradient(135deg, var(--wall-a), var(--wall-b));
+      isolation: isolate;
+      transition: width 0.25s ease;
+    }
+
+    .desktop-canvas::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image: var(--wallpaper, none);
+      background-position: center;
+      background-size: cover;
+      opacity: var(--wallpaper-opacity, 0);
+      filter: blur(var(--wallpaper-blur, 0px)) brightness(0.74);
+      transform: scale(1.04);
+    }
+
+    .desktop-canvas::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(180deg, rgba(21, 34, 24, 0.01), rgba(21, 34, 24, 0.14)),
+        radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.24), transparent 36%);
+      pointer-events: none;
+    }
+
+    .desktop-menu {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 42px;
+      padding: 0 15px;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 16px;
+      color: white;
+      background: rgba(37, 58, 42, 0.28);
+      box-shadow: 0 12px 35px rgba(23, 40, 28, 0.1);
+      backdrop-filter: blur(18px);
+    }
+
+    .menu-left,
+    .menu-right {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+    }
+
+    .menu-logo {
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: -0.02em;
+    }
+
+    .menu-item {
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 9px;
+      font-weight: 750;
+    }
+
+    .menu-pair-name {
+      max-width: 260px;
+      overflow: hidden;
+      color: white;
+      font-size: 9px;
+      font-weight: 850;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .glass-panel {
+      border: 1px solid rgba(255, 255, 255, 0.54);
+      background: var(--glass);
+      box-shadow: 0 16px 40px rgba(42, 67, 48, 0.1);
+      backdrop-filter: blur(18px);
+    }
+
+    .desktop-grid {
+      display: grid;
+      gap: 14px;
+      align-items: start;
+      margin-top: 15px;
+    }
+
+    /* 카드형 배치 */
+    .desktop-grid.mode-cards.layout-few {
+      grid-template-columns: 220px minmax(0, 1fr) 245px;
+      grid-template-areas:
+        "profileA hero profileB"
+        "relation stories music"
+        "symbol stories tags";
+    }
+
+    .desktop-grid.mode-cards.layout-medium {
+      grid-template-columns: 220px minmax(0, 1fr) 245px;
+      grid-template-areas:
+        "profileA hero profileB"
+        "relation stories music"
+        "symbol stories tags";
+    }
+
+    .desktop-grid.mode-cards.layout-many {
+      grid-template-columns: 1fr 1.8fr 1fr;
+      grid-template-areas:
+        "profileA hero profileB"
+        "stories stories stories"
+        "relation symbol music"
+        "tags tags music";
+    }
+
+    /* 타임라인형 배치 */
+    .desktop-grid.mode-timeline {
+      grid-template-columns: 220px minmax(0, 1fr) 245px;
+      grid-template-areas:
+        "profileA hero profileB"
+        "relation timeline music"
+        "symbol timeline tags";
+    }
+
+    .area-profile-a { grid-area: profileA; }
+    .area-profile-b { grid-area: profileB; }
+    .area-hero { grid-area: hero; }
+    .area-relation { grid-area: relation; }
+    .area-symbol { grid-area: symbol; }
+    .area-stories { grid-area: stories; }
+    .area-timeline { grid-area: timeline; }
+    .area-music { grid-area: music; }
+    .area-tags { grid-area: tags; }
+
+    .profile-widget {
+      overflow: hidden;
+      border-radius: 23px;
+    }
+
+    .profile-visual {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.78), transparent 28%),
+        linear-gradient(145deg, var(--accent-soft), #c2d9c5);
+    }
+
+    .profile-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .image-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(65, 96, 73, 0.45);
+      font-size: 27px;
+      font-weight: 950;
+    }
+
+    .image-credit {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      max-width: calc(100% - 16px);
+      overflow: hidden;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(31, 54, 37, 0.55);
+      backdrop-filter: blur(8px);
+      font-size: 7px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .profile-content {
+      padding: 14px;
+    }
+
+    .profile-role {
+      margin-bottom: 5px;
+      color: var(--accent);
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .profile-name {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+    }
+
+    .profile-intro {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .profile-quote {
+      margin: 11px 0 0;
+      padding: 10px;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 10px 10px 0;
+      color: var(--accent-deep);
+      background: rgba(255, 255, 255, 0.42);
+      font-size: 8px;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+
+    .profile-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .profile-tag {
+      padding: 5px 7px;
+      border-radius: 999px;
+      color: var(--accent-deep);
+      background: var(--accent-soft);
+      font-size: 7px;
+      font-weight: 850;
+    }
+
+    .hero-widget {
+      position: relative;
+      min-height: 320px;
+      overflow: hidden;
+      border-radius: 25px;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.3), transparent 28%),
+        linear-gradient(135deg, #c8dec8, #7e9f88);
+      box-shadow: 0 20px 48px rgba(38, 61, 44, 0.14);
+    }
+
+    .hero-widget img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: var(--hero-x, 50%) var(--hero-y, 50%);
+    }
+
+    .hero-shade {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(31, 52, 36, 0.02), rgba(31, 52, 36, 0.62)),
+        linear-gradient(90deg, rgba(31, 52, 36, 0.18), transparent 65%);
+    }
+
+    .hero-credit {
+      position: absolute;
+      top: 13px;
+      right: 13px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(31, 52, 36, 0.53);
+      backdrop-filter: blur(8px);
+      font-size: 7px;
+      font-weight: 850;
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 21px;
+      color: white;
+    }
+
+    .hero-kicker {
+      margin-bottom: 7px;
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.18em;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: 33px;
+      line-height: 1;
+      letter-spacing: -0.047em;
+      text-shadow: 0 4px 18px rgba(20, 36, 24, 0.22);
+    }
+
+    .hero-subtitle {
+      max-width: 86%;
+      margin: 10px 0 0;
+      color: rgba(255, 255, 255, 0.87);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .hero-date {
+      display: inline-flex;
+      margin-top: 12px;
+      padding: 6px 9px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 8px;
+      font-weight: 850;
+      backdrop-filter: blur(8px);
+    }
+
+    .relation-widget,
+    .tag-widget {
+      padding: 14px;
+      border-radius: 20px;
+    }
+
+    .widget-eyebrow {
+      color: var(--accent);
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.15em;
+    }
+
+    .widget-title {
+      margin: 6px 0 0;
+      font-size: 13px;
+      letter-spacing: -0.025em;
+    }
+
+    .relation-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .relation-row {
+      padding: 9px 10px;
+      border: 1px solid rgba(64, 89, 70, 0.075);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.48);
+    }
+
+    .relation-label {
+      color: var(--accent);
+      font-size: 7px;
+      font-weight: 900;
+    }
+
+    .relation-value {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .symbol-widget {
+      overflow: hidden;
+      border-radius: 20px;
+    }
+
+    .symbol-visual {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.75), transparent 28%),
+        linear-gradient(135deg, #dcebdc, #a9c5ad);
+    }
+
+    .symbol-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .symbol-copy {
+      padding: 13px 14px 14px;
+    }
+
+    .symbol-text {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .story-board {
+      padding: 15px;
+      border-radius: 23px;
+    }
+
+    .story-board-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 11px;
+    }
+
+    .story-board-head h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -0.025em;
+    }
+
+    .story-board-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .story-count {
+      color: var(--accent);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+    }
+
+    .story-grid {
+      display: grid;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .story-grid.cols-1 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .story-grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .story-card {
+      display: grid;
+      min-width: 0;
+      min-height: 190px;
+      overflow: hidden;
+      grid-template-columns: minmax(145px, 34%) minmax(0, 1fr);
+      border: 1px solid rgba(64, 89, 70, 0.09);
+      border-radius: 17px;
+      background: var(--glass-strong);
+      box-shadow: 0 8px 20px rgba(45, 70, 51, 0.05);
+    }
+
+    .story-visual {
+      position: relative;
+      min-height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.7), transparent 26%),
+        linear-gradient(135deg, var(--accent-soft), #bfd4c2);
+    }
+
+    .story-visual img {
+      width: 100%;
+      height: 100%;
+      min-height: 190px;
+      object-fit: cover;
+    }
+
+    .story-index {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      display: grid;
+      place-items: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 7px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 10px;
+      color: white;
+      background: rgba(31, 52, 36, 0.56);
+      backdrop-filter: blur(8px);
+      font-size: 8px;
+      font-weight: 950;
+    }
+
+    .story-content {
+      display: flex;
+      min-width: 0;
+      padding: 14px;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .story-time {
+      color: var(--accent);
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+    }
+
+    .story-content h3 {
+      margin: 6px 0 0;
+      font-size: 12px;
+      line-height: 1.38;
+      letter-spacing: -0.02em;
+    }
+
+    .story-content p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 8.5px;
+      line-height: 1.67;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+
+    .story-empty {
+      grid-column: 1 / -1;
+      padding: 34px;
+      border: 1px dashed rgba(64, 89, 70, 0.16);
+      border-radius: 16px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.35);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    /* 엇갈린 가로 타임라인 */
+    .timeline-board {
+      padding: 15px;
+      overflow: hidden;
+      border-radius: 23px;
+    }
+
+    .timeline-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 0 6px;
+      scrollbar-width: thin;
+    }
+
+    .timeline-track {
+      position: relative;
+      display: grid;
+      grid-auto-columns: 250px;
+      grid-auto-flow: column;
+      gap: 22px;
+      min-width: 100%;
+      height: 535px;
+      padding: 10px 30px;
+      align-items: stretch;
+    }
+
+    .timeline-axis {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 267px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--accent-deep);
+      opacity: 0.88;
+    }
+
+    .timeline-item {
+      position: relative;
+      display: flex;
+      height: 100%;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .timeline-item.is-top {
+      justify-content: flex-start;
+      padding-bottom: 286px;
+    }
+
+    .timeline-item.is-bottom {
+      justify-content: flex-end;
+      padding-top: 286px;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: 2px;
+      border-left: 2px dashed rgba(72, 98, 83, 0.55);
+      transform: translateX(-50%);
+    }
+
+    .timeline-item.is-top::before {
+      top: 215px;
+      height: 48px;
+    }
+
+    .timeline-item.is-bottom::before {
+      top: 271px;
+      height: 48px;
+    }
+
+    .timeline-item::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 258px;
+      width: 17px;
+      height: 17px;
+      border: 4px solid rgba(255, 255, 255, 0.78);
+      border-radius: 50%;
+      background: var(--accent-deep);
+      box-shadow: 0 4px 10px rgba(43, 67, 48, 0.14);
+      transform: translateX(-50%);
+    }
+
+    .timeline-card {
+      width: 100%;
+      min-height: 205px;
+      max-height: 225px;
+      overflow: hidden;
+      border: 1px solid rgba(64, 89, 70, 0.1);
+      border-radius: 17px;
+      background: var(--glass-strong);
+      box-shadow: 0 10px 25px rgba(45, 70, 51, 0.07);
+    }
+
+    .timeline-card-visual {
+      position: relative;
+      height: 82px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.7), transparent 26%),
+        linear-gradient(135deg, var(--accent-soft), #bfd4c2);
+    }
+
+    .timeline-card-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .timeline-card-copy {
+      padding: 11px 12px 13px;
+    }
+
+    .timeline-card-copy h3 {
+      margin: 5px 0 0;
+      font-size: 10.5px;
+      line-height: 1.35;
+    }
+
+    .timeline-card-copy p {
+      display: -webkit-box;
+      margin: 7px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 7.8px;
+      line-height: 1.52;
+      white-space: pre-line;
+      -webkit-line-clamp: 6;
+      -webkit-box-orient: vertical;
+    }
+
+    .music-widget {
+      overflow: hidden;
+      border-radius: 21px;
+    }
+
+    .music-cover {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      color: white;
+      background: linear-gradient(135deg, #86a68f, #395844);
+    }
+
+    .music-cover img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .music-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(28, 48, 33, 0.03), rgba(28, 48, 33, 0.82));
+    }
+
+    .music-now {
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      bottom: 12px;
+    }
+
+    .music-label {
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.15em;
+    }
+
+    .music-title {
+      margin-top: 6px;
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 950;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .music-artist {
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 7px;
+    }
+
+    .music-progress {
+      height: 3px;
+      margin-top: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .music-progress span {
+      display: block;
+      width: 46%;
+      height: 100%;
+      background: white;
+    }
+
+    .playlist {
+      display: grid;
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .song-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 26px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px;
+      border-radius: 10px;
+    }
+
+    .song-row.active {
+      background: var(--accent-soft);
+    }
+
+    .song-thumb {
+      width: 34px;
+      height: 34px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent-soft), #b9cfbc);
+    }
+
+    .song-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .song-info {
+      min-width: 0;
+    }
+
+    .song-name {
+      overflow: hidden;
+      font-size: 8px;
+      font-weight: 950;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .song-artist {
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 7px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .song-play {
+      display: grid;
+      place-items: center;
+      width: 25px;
+      height: 25px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--accent-deep);
+      background: rgba(255, 255, 255, 0.86);
+      font-size: 8px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      padding: 5px 7px;
+      border: 1px solid var(--accent-soft);
+      border-radius: 999px;
+      color: var(--accent-deep);
+      background: rgba(255, 255, 255, 0.76);
+      font-size: 7px;
+      font-weight: 850;
+    }
+
+    .desktop-footer {
+      padding-top: 12px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 8px;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    /* themes */
+
+    .theme-mint {
+      --wall-a: #83b4a5;
+      --wall-b: #d5ece1;
+      --accent: #6a9f8d;
+      --accent-deep: #3f6d5d;
+      --accent-soft: #d8ece4;
+    }
+
+    .theme-cream {
+      --wall-a: #a9b98e;
+      --wall-b: #edf0cf;
+      --accent: #8b9d67;
+      --accent-deep: #5d6d43;
+      --accent-soft: #e8edd7;
+    }
+
+    .theme-forest {
+      --wall-a: #385844;
+      --wall-b: #7f9e86;
+      --accent: #6f9478;
+      --accent-deep: #365340;
+      --accent-soft: #d9e8dc;
+    }
+
+    .theme-sage {
+      --wall-a: #829584;
+      --wall-b: #ccd8c2;
+      --accent: #7f967e;
+      --accent-deep: #536653;
+      --accent-soft: #e0e9dc;
+    }
+
+    /* export */
+
+    .export-mode {
+      padding: 28px 32px 34px !important;
+    }
+
+    .export-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      background: rgba(8, 11, 9, 0.84);
+      backdrop-filter: blur(16px);
+    }
+
+    .export-modal.show {
+      display: grid;
+    }
+
+    .export-dialog {
+      width: min(940px, 96vw);
+      max-height: 92vh;
+      overflow: auto;
+      padding: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 21px;
+      background: #182019;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .export-dialog-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 11px;
+    }
+
+    .export-dialog-head h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .export-preview {
+      display: block;
+      width: 100%;
+      border-radius: 13px;
+      background: #0e120f;
+    }
+
+    .export-dialog-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 11px;
+    }
+
+    .export-tip {
+      margin: 9px 2px 0;
+      color: var(--editor-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 23px;
+      z-index: 120;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 999px;
+      color: white;
+      background: rgba(24, 32, 25, 0.92);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 11px);
+      transition: 0.23s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 980px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .editor {
+        position: static;
+        max-height: none;
+      }
+
+      .stage-note {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-header {
+        padding: 13px;
+      }
+
+      .brand p {
+        display: none;
+      }
+
+      .workspace {
+        padding: 9px;
+      }
+
+      .editor {
+        padding: 11px;
+        border-radius: 17px;
+      }
+
+      .header-actions .ghost-btn {
+        display: none;
+      }
+
+      .primary-btn {
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Pair Archive</h1>
+      <p>가로 카드형과 엇갈린 타임라인형을 골라 쓰는 반투명 연두색 페어 아카이브.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="ghost-btn" id="resetBtn" type="button">예시로 초기화</button>
+      <button class="primary-btn" id="exportBtn" type="button">PNG로 저장</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="editor">
+      <details class="editor-section" open>
+        <summary>서사 모드</summary>
+        <div class="section-body">
+          <div class="mode-options">
+            <label class="mode-option">
+              <input type="radio" name="storyMode" value="cards" checked />
+              <span>가로 카드형</span>
+            </label>
+
+            <label class="mode-option">
+              <input type="radio" name="storyMode" value="timeline" />
+              <span>엇갈린 타임라인형</span>
+            </label>
+          </div>
+
+          <p class="mini-label" style="margin:10px 2px 0; line-height:1.55;">
+            가로 카드형은 긴 글에 적합하고, 타임라인형은 장면 흐름을 한눈에 보여 주기 좋아.
+          </p>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>페어 기본 정보</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="pairName">페어 이름</label>
+            <input id="pairName" type="text" maxlength="40" />
+          </div>
+
+          <div class="field">
+            <label for="pairSubtitle">한 줄 소개</label>
+            <input id="pairSubtitle" type="text" maxlength="120" />
+          </div>
+
+          <div class="field">
+            <label for="anniversary">기념일 — 선택</label>
+            <input id="anniversary" type="text" maxlength="26" placeholder="예: 2024. 03. 14" />
+          </div>
+
+          <div class="field">
+            <label for="pairQuote">대표 문장</label>
+            <textarea id="pairQuote" maxlength="240"></textarea>
+          </div>
+
+          <div class="field">
+            <label>페어 태그</label>
+            <div class="tag-editor" id="pairTagEditor"></div>
+
+            <div class="tag-input-row">
+              <input id="pairTagInput" type="text" maxlength="30" placeholder="#새태그" />
+              <button class="tag-add-btn" id="addPairTagBtn" type="button">추가</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>메인 일러스트</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="heroUpload">메인 일러스트</label>
+            <input id="heroUpload" type="file" accept="image/*" />
+          </div>
+
+          <div class="field">
+            <label for="heroCredit">커미션주 / 출처 표기</label>
+            <input id="heroCredit" type="text" maxlength="70" placeholder="@commissioner" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="heroX">가로 위치</label>
+              <input id="heroX" type="range" min="0" max="100" />
+            </div>
+
+            <div class="field">
+              <label for="heroY">세로 위치</label>
+              <input id="heroY" type="range" min="0" max="100" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="wallpaperUpload">배경 이미지 — 선택</label>
+            <input id="wallpaperUpload" type="file" accept="image/*" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="wallpaperOpacity">배경 투명도</label>
+              <input id="wallpaperOpacity" type="range" min="0" max="100" />
+            </div>
+
+            <div class="field">
+              <label for="wallpaperBlur">배경 흐리기</label>
+              <input id="wallpaperBlur" type="range" min="0" max="20" />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>왼쪽 인물</summary>
+        <div class="section-body" id="charAEditor"></div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>오른쪽 인물</summary>
+        <div class="section-body" id="charBEditor"></div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>관계 메모</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="firstImpression">첫인상</label>
+            <textarea id="firstImpression" maxlength="160"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="currentRelation">현재 관계</label>
+            <textarea id="currentRelation" maxlength="160"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="nicknames">서로를 부르는 호칭</label>
+            <input id="nicknames" type="text" maxlength="90" />
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>둘의 상징</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="symbolText">상징 문구 / 설명</label>
+            <textarea id="symbolText" maxlength="260"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="symbolUpload">상징 오브제·일러스트·사진 — 선택</label>
+            <input id="symbolUpload" type="file" accept="image/*" />
+          </div>
+
+          <div class="field">
+            <label for="symbolCredit">커미션주 / 출처 표기</label>
+            <input id="symbolCredit" type="text" maxlength="70" placeholder="@commissioner" />
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="symbolX">가로 위치</label>
+              <input id="symbolX" type="range" min="0" max="100" />
+            </div>
+
+            <div class="field">
+              <label for="symbolY">세로 위치</label>
+              <input id="symbolY" type="range" min="0" max="100" />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>서사 블럭</summary>
+        <div class="section-body">
+          <div id="storyEditorList" class="editor-list"></div>
+          <button class="add-btn" id="addStoryBtn" type="button">＋ 서사 블럭 1개 추가</button>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>테마곡</summary>
+        <div class="section-body">
+          <div id="songEditorList" class="editor-list"></div>
+          <button class="add-btn" id="addSongBtn" type="button">＋ 테마곡 1개 추가</button>
+        </div>
+      </details>
+
+      <details class="editor-section">
+        <summary>색상 테마</summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="themeSelect">테마</label>
+            <select id="themeSelect">
+              <option value="">Transparent Green</option>
+              <option value="theme-mint">Mint Glass</option>
+              <option value="theme-cream">Cream Green</option>
+              <option value="theme-sage">Sage</option>
+              <option value="theme-forest">Deep Forest</option>
+            </select>
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <section class="stage">
+      <p class="stage-note">
+        서사 수와 모드에 따라 전체 폭과 위젯 위치가 자동으로 바뀌어.
+      </p>
+
+      <div class="preview-wrap">
+        <div class="desktop-canvas" id="captureArea">
+          <header class="desktop-menu">
+            <div class="menu-left">
+              <span class="menu-logo">● Pair Studio</span>
+              <span class="menu-item">Archive</span>
+              <span class="menu-item">Story</span>
+              <span class="menu-item">Music</span>
+            </div>
+
+            <div class="menu-right">
+              <span class="menu-pair-name" id="menuPairName"></span>
+              <span class="menu-item" id="menuDate"></span>
+            </div>
+          </header>
+
+          <div class="desktop-grid" id="desktopGrid">
+            <section class="profile-widget glass-panel area-profile-a">
+              <div class="profile-visual">
+                <div class="image-placeholder" id="charAPlaceholder">A</div>
+                <img id="charAImage" alt="" />
+                <div class="image-credit" id="charACreditView"></div>
+              </div>
+
+              <div class="profile-content">
+                <div class="profile-role" id="charARoleView"></div>
+                <h2 class="profile-name" id="charANameView"></h2>
+                <p class="profile-intro" id="charAIntroView"></p>
+                <p class="profile-quote" id="charAQuoteView"></p>
+                <div class="profile-tags" id="charATagsView"></div>
+              </div>
+            </section>
+
+            <section class="hero-widget area-hero">
+              <div class="image-placeholder" id="heroPlaceholder">PAIR ILLUSTRATION</div>
+              <img id="heroImage" alt="" />
+              <div class="hero-shade"></div>
+              <div class="hero-credit" id="heroCreditView"></div>
+
+              <div class="hero-copy">
+                <div class="hero-kicker">A DESKTOP FULL OF OUR MEMORIES</div>
+                <h1 class="hero-title" id="heroTitle"></h1>
+                <p class="hero-subtitle" id="heroSubtitle"></p>
+                <div class="hero-date" id="anniversaryView"></div>
+              </div>
+            </section>
+
+            <section class="profile-widget glass-panel area-profile-b">
+              <div class="profile-visual">
+                <div class="image-placeholder" id="charBPlaceholder">B</div>
+                <img id="charBImage" alt="" />
+                <div class="image-credit" id="charBCreditView"></div>
+              </div>
+
+              <div class="profile-content">
+                <div class="profile-role" id="charBRoleView"></div>
+                <h2 class="profile-name" id="charBNameView"></h2>
+                <p class="profile-intro" id="charBIntroView"></p>
+                <p class="profile-quote" id="charBQuoteView"></p>
+                <div class="profile-tags" id="charBTagsView"></div>
+              </div>
+            </section>
+
+            <section class="relation-widget glass-panel area-relation">
+              <div class="widget-eyebrow">PAIR NOTES</div>
+              <h3 class="widget-title">둘 사이의 메모</h3>
+
+              <div class="relation-list">
+                <div class="relation-row">
+                  <div class="relation-label">첫인상</div>
+                  <div class="relation-value" id="firstImpressionView"></div>
+                </div>
+
+                <div class="relation-row">
+                  <div class="relation-label">현재 관계</div>
+                  <div class="relation-value" id="currentRelationView"></div>
+                </div>
+
+                <div class="relation-row">
+                  <div class="relation-label">호칭</div>
+                  <div class="relation-value" id="nicknamesView"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="symbol-widget glass-panel area-symbol">
+              <div class="symbol-visual">
+                <div class="image-placeholder" id="symbolPlaceholder">SYMBOL</div>
+                <img id="symbolImage" alt="" />
+                <div class="image-credit" id="symbolCreditView"></div>
+              </div>
+
+              <div class="symbol-copy">
+                <div class="widget-eyebrow">OUR SYMBOL</div>
+                <p class="symbol-text" id="symbolTextView"></p>
+              </div>
+            </section>
+
+            <section class="story-board glass-panel area-stories" id="cardStoryBoard">
+              <div class="story-board-head">
+                <div>
+                  <h2>Story Fragments</h2>
+                  <p>가로로 길게 정리한 시간대별 서사</p>
+                </div>
+
+                <div class="story-count" id="storyCount"></div>
+              </div>
+
+              <div class="story-grid" id="storyGrid"></div>
+            </section>
+
+            <section class="timeline-board glass-panel area-timeline" id="timelineStoryBoard">
+              <div class="story-board-head">
+                <div>
+                  <h2>Timeline Fragments</h2>
+                  <p>한 줄 위아래로 엇갈려 놓은 장면들</p>
+                </div>
+
+                <div class="story-count" id="timelineStoryCount"></div>
+              </div>
+
+              <div class="timeline-scroll">
+                <div class="timeline-track" id="timelineTrack">
+                  <div class="timeline-axis"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="music-widget glass-panel area-music">
+              <div class="music-cover">
+                <img id="nowCover" alt="" />
+                <div class="music-shade"></div>
+
+                <div class="music-now">
+                  <div class="music-label">NOW PLAYING</div>
+                  <div class="music-title" id="nowTitle"></div>
+                  <div class="music-artist" id="nowArtist"></div>
+                  <div class="music-progress"><span></span></div>
+                </div>
+              </div>
+
+              <div class="playlist" id="playlist"></div>
+            </section>
+
+            <section class="tag-widget glass-panel area-tags">
+              <div class="widget-eyebrow">KEYWORDS</div>
+              <h3 class="widget-title">페어 태그</h3>
+              <div class="tag-list" id="tagList"></div>
+
+              <div class="relation-row" style="margin-top:12px;">
+                <div class="relation-label">PAIR LINE</div>
+                <div class="relation-value" id="pairQuoteView"></div>
+              </div>
+            </section>
+          </div>
+
+          <footer class="desktop-footer">PAIR ARCHIVE · MADE WITH OUR MEMORIES</footer>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="export-modal" id="exportModal">
+    <div class="export-dialog">
+      <div class="export-dialog-head">
+        <h3>이미지가 완성됐어</h3>
+        <button class="ghost-btn" id="closeExportBtn" type="button">닫기</button>
+      </div>
+
+      <img class="export-preview" id="exportPreview" alt="저장 이미지 미리보기" />
+
+      <div class="export-dialog-actions">
+        <button class="primary-btn" id="downloadExportBtn" type="button">PNG 다운로드</button>
+        <button class="ghost-btn" id="openExportBtn" type="button">새 탭에서 열기</button>
+      </div>
+
+      <p class="export-tip">
+        모바일에서 바로 저장되지 않으면 새 탭에서 연 뒤 이미지를 길게 눌러 저장해 줘.
+      </p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (selector, parent = document) => parent.querySelector(selector);
+    const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
+
+    let uid = 1000;
+    const nextId = () => ++uid;
+
+    const createCharacter = (side) => ({
+      name: side === "A" ? "Junsu" : "Seowoo",
+      role: side === "A" ? "THE QUIET ONE" : "THE WARM ONE",
+      intro:
+        side === "A"
+          ? "말수가 적지만 한 번 마음에 둔 사람은 오래 지켜보는 편."
+          : "다정하고 솔직하다. 두 사람 사이의 침묵을 먼저 깨는 쪽.",
+      quote:
+        side === "A"
+          ? "네가 모르는 동안에도 나는 계속 네 편이었어."
+          : "이번에는 내가 먼저 네 곁에 남을게.",
+      tags: side === "A" ? ["#무심다정", "#기억"] : ["#햇살", "#직진"],
+      image: "",
+      credit: "",
+      x: 50,
+      y: 50
+    });
+
+    const defaultState = () => {
+      const stories = [
+        {
+          id: nextId(),
+          time: "봄 · 1년 전",
+          title: "처음 이름을 기억한 날",
+          description:
+            "낯선 장소에서 우연히 마주친 두 사람. 짧은 대화였지만 그날 이후 서로의 이름은 쉽게 잊히지 않았다. 처음에는 서로가 특별해질 거라고 생각하지 않았지만, 작은 기억들이 차곡차곡 쌓이기 시작했다.",
+          image: "",
+          credit: "",
+          x: 50,
+          y: 50
+        },
+        {
+          id: nextId(),
+          time: "여름 · 현재",
+          title: "같은 방향으로 걷기 시작하다",
+          description:
+            "계속 엇갈리던 두 사람이 마침내 같은 목표를 향해 한 걸음씩 나아가기 시작한다. 말하지 못했던 감정과 오해를 하나씩 꺼내 놓으면서, 이전보다 조금 더 가까운 관계가 된다.",
+          image: "",
+          credit: "",
+          x: 50,
+          y: 50
+        },
+        {
+          id: nextId(),
+          time: "겨울 · 이후",
+          title: "우리의 다음 계절",
+          description:
+            "완벽한 결말 대신 함께 살아갈 날들을 선택한다. 이전과는 다른 방식으로 서로의 곁을 지키기로 하고, 아직 오지 않은 계절을 둘이서 천천히 맞이한다.",
+          image: "",
+          credit: "",
+          x: 50,
+          y: 50
+        }
+      ];
+
+      const songs = [
+        {
+          id: nextId(),
+          title: "A Song for Us",
+          artist: "Artist Name",
+          cover: "",
+          audioUrl: "",
+          audioName: ""
+        },
+        {
+          id: nextId(),
+          title: "After the Rain",
+          artist: "Artist Name",
+          cover: "",
+          audioUrl: "",
+          audioName: ""
+        }
+      ];
+
+      return {
+        storyMode: "cards",
+        pairName: "JUNSU × SEOWOO",
+        pairSubtitle: "서로 다른 계절을 지나 결국 같은 장면에 도착한 두 사람.",
+        anniversary: "2024. 03. 14",
+        pairQuote: "돌아보면 언제나 같은 자리에 네가 있었다.",
+        pairTags: ["#첫만남", "#재회", "#성장", "#약속"],
+
+        heroImage: "",
+        heroCredit: "",
+        heroX: 50,
+        heroY: 50,
+
+        wallpaperImage: "",
+        wallpaperOpacity: 28,
+        wallpaperBlur: 3,
+        theme: "",
+
+        firstImpression: "서로를 조금 이상한 사람이라고 생각했다.",
+        currentRelation: "말하지 않아도 같은 편이라고 믿는 사이.",
+        nicknames: "준수 → 서우 / 서우 → 준수",
+
+        symbolText: "비가 그친 뒤의 푸른 저녁과 오래된 유리병. 둘에게는 끝이 아니라 다시 시작할 수 있다는 뜻이다.",
+        symbolImage: "",
+        symbolCredit: "",
+        symbolX: 50,
+        symbolY: 50,
+
+        charA: createCharacter("A"),
+        charB: createCharacter("B"),
+
+        stories,
+        songs,
+        activeSongId: songs[0].id
+      };
+    };
+
+    let state = defaultState();
+    let currentAudio = null;
+    let exportObjectUrl = "";
+    let exportFilename = "pair-archive.png";
+
+    const els = {
+      captureArea: $("#captureArea"),
+      desktopGrid: $("#desktopGrid"),
+      previewWrap: $(".preview-wrap"),
+      menuPairName: $("#menuPairName"),
+      menuDate: $("#menuDate"),
+
+      heroImage: $("#heroImage"),
+      heroPlaceholder: $("#heroPlaceholder"),
+      heroCreditView: $("#heroCreditView"),
+      heroTitle: $("#heroTitle"),
+      heroSubtitle: $("#heroSubtitle"),
+      anniversaryView: $("#anniversaryView"),
+
+      charAEditor: $("#charAEditor"),
+      charBEditor: $("#charBEditor"),
+
+      firstImpressionView: $("#firstImpressionView"),
+      currentRelationView: $("#currentRelationView"),
+      nicknamesView: $("#nicknamesView"),
+
+      symbolImage: $("#symbolImage"),
+      symbolPlaceholder: $("#symbolPlaceholder"),
+      symbolCreditView: $("#symbolCreditView"),
+      symbolTextView: $("#symbolTextView"),
+
+      pairTagEditor: $("#pairTagEditor"),
+      pairTagInput: $("#pairTagInput"),
+      tagList: $("#tagList"),
+      pairQuoteView: $("#pairQuoteView"),
+
+      cardStoryBoard: $("#cardStoryBoard"),
+      timelineStoryBoard: $("#timelineStoryBoard"),
+      storyGrid: $("#storyGrid"),
+      storyCount: $("#storyCount"),
+      timelineTrack: $("#timelineTrack"),
+      timelineStoryCount: $("#timelineStoryCount"),
+      storyEditorList: $("#storyEditorList"),
+
+      playlist: $("#playlist"),
+      nowCover: $("#nowCover"),
+      nowTitle: $("#nowTitle"),
+      nowArtist: $("#nowArtist"),
+      songEditorList: $("#songEditorList"),
+
+      exportModal: $("#exportModal"),
+      exportPreview: $("#exportPreview"),
+      toast: $("#toast")
+    };
+
+    const baseFields = [
+      ["pairName", "pairName"],
+      ["pairSubtitle", "pairSubtitle"],
+      ["anniversary", "anniversary"],
+      ["pairQuote", "pairQuote"],
+      ["heroCredit", "heroCredit"],
+      ["firstImpression", "firstImpression"],
+      ["currentRelation", "currentRelation"],
+      ["nicknames", "nicknames"],
+      ["symbolText", "symbolText"],
+      ["symbolCredit", "symbolCredit"]
+    ];
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function readImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 2200);
+    }
+
+    function normalizeTag(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      return text.startsWith("#") ? text : `#${text}`;
+    }
+
+    function setImage(img, placeholder, src, position = "50% 50%") {
+      if (src) {
+        img.src = src;
+        img.style.display = "block";
+        img.style.objectPosition = position;
+        if (placeholder) placeholder.style.display = "none";
+      } else {
+        img.removeAttribute("src");
+        img.style.display = "none";
+        if (placeholder) placeholder.style.display = "grid";
+      }
+    }
+
+    function getLayoutClass(count) {
+      if (count <= 2) return "layout-few";
+      if (count <= 5) return "layout-medium";
+      return "layout-many";
+    }
+
+    function getCanvasWidth(count, mode) {
+      if (mode === "timeline") {
+        if (count <= 4) return 1320;
+        if (count <= 6) return 1460;
+        return 1580;
+      }
+
+      if (count <= 2) return 1220;
+      if (count <= 5) return 1380;
+      return 1540;
+    }
+
+    function getCardColumns(count) {
+      if (count <= 1) return 1;
+      return 2;
+    }
+
+    function renderPairTagEditor() {
+      els.pairTagEditor.innerHTML = state.pairTags.length
+        ? state.pairTags
+            .map(
+              (tag, index) => `
+                <span class="tag-editor-chip">
+                  ${escapeHtml(tag)}
+                  <button type="button" data-pair-tag-remove="${index}" aria-label="태그 삭제">×</button>
+                </span>
+              `
+            )
+            .join("")
+        : `<span class="mini-label">아직 태그가 없어.</span>`;
+    }
+
+    function characterEditorTemplate(key, character) {
+      return `
+        <div class="field">
+          <label>인물 이름</label>
+          <input type="text" maxlength="40" value="${escapeHtml(character.name)}" data-char-field="${key}:name" />
+        </div>
+
+        <div class="field">
+          <label>짧은 역할 / 수식어</label>
+          <input type="text" maxlength="50" value="${escapeHtml(character.role)}" data-char-field="${key}:role" />
+        </div>
+
+        <div class="field">
+          <label>간단한 소개</label>
+          <textarea maxlength="300" data-char-field="${key}:intro">${escapeHtml(character.intro)}</textarea>
+        </div>
+
+        <div class="field">
+          <label>대표 대사</label>
+          <textarea maxlength="220" data-char-field="${key}:quote">${escapeHtml(character.quote)}</textarea>
+        </div>
+
+        <div class="field">
+          <label>인물 태그</label>
+          <div class="tag-editor">
+            ${
+              character.tags.length
+                ? character.tags
+                    .map(
+                      (tag, index) => `
+                        <span class="tag-editor-chip">
+                          ${escapeHtml(tag)}
+                          <button type="button" data-char-tag-remove="${key}:${index}" aria-label="태그 삭제">×</button>
+                        </span>
+                      `
+                    )
+                    .join("")
+                : `<span class="mini-label">아직 태그가 없어.</span>`
+            }
+          </div>
+
+          <div class="tag-input-row">
+            <input type="text" maxlength="30" placeholder="#새태그" data-char-tag-input="${key}" />
+            <button class="tag-add-btn" type="button" data-char-tag-add="${key}">추가</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>인물 일러스트</label>
+          <input type="file" accept="image/*" data-char-image="${key}" />
+        </div>
+
+        <div class="field">
+          <label>커미션주 / 출처 표기</label>
+          <input
+            type="text"
+            maxlength="70"
+            value="${escapeHtml(character.credit)}"
+            data-char-field="${key}:credit"
+            placeholder="@commissioner"
+          />
+        </div>
+
+        <div class="two-col">
+          <div class="field">
+            <label>가로 위치</label>
+            <input type="range" min="0" max="100" value="${character.x}" data-char-field="${key}:x" />
+          </div>
+
+          <div class="field">
+            <label>세로 위치</label>
+            <input type="range" min="0" max="100" value="${character.y}" data-char-field="${key}:y" />
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCharacterEditors() {
+      els.charAEditor.innerHTML = characterEditorTemplate("charA", state.charA);
+      els.charBEditor.innerHTML = characterEditorTemplate("charB", state.charB);
+    }
+
+    function renderStoryEditor() {
+      els.storyEditorList.innerHTML = state.stories.length
+        ? state.stories
+            .map(
+              (story, index) => `
+                <div class="editor-card" data-story-editor="${story.id}">
+                  <div class="editor-card-head">
+                    <div class="editor-card-title">서사 ${index + 1}</div>
+
+                    <div class="small-actions">
+                      <button class="mini-btn" type="button" data-story-up="${story.id}" title="위로">↑</button>
+                      <button class="mini-btn" type="button" data-story-down="${story.id}" title="아래로">↓</button>
+                      <button class="mini-btn danger" type="button" data-story-delete="${story.id}" title="삭제">×</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label>시간대</label>
+                    <input type="text" maxlength="36" value="${escapeHtml(story.time)}" data-story-field="${story.id}:time" />
+                  </div>
+
+                  <div class="field">
+                    <label>서사 제목</label>
+                    <input type="text" maxlength="80" value="${escapeHtml(story.title)}" data-story-field="${story.id}:title" />
+                  </div>
+
+                  <div class="field">
+                    <label>서사 내용</label>
+                    <textarea maxlength="900" style="min-height:150px;" data-story-field="${story.id}:description">${escapeHtml(story.description)}</textarea>
+                  </div>
+
+                  <div class="field">
+                    <label>서사 일러스트</label>
+                    <input type="file" accept="image/*" data-story-image="${story.id}" />
+                  </div>
+
+                  <div class="field">
+                    <label>커미션주 / 출처 표기</label>
+                    <input
+                      type="text"
+                      maxlength="70"
+                      value="${escapeHtml(story.credit)}"
+                      data-story-field="${story.id}:credit"
+                      placeholder="@commissioner"
+                    />
+                  </div>
+
+                  <div class="two-col">
+                    <div class="field">
+                      <label>가로 위치</label>
+                      <input type="range" min="0" max="100" value="${story.x}" data-story-field="${story.id}:x" />
+                    </div>
+
+                    <div class="field">
+                      <label>세로 위치</label>
+                      <input type="range" min="0" max="100" value="${story.y}" data-story-field="${story.id}:y" />
+                    </div>
+                  </div>
+                </div>
+              `
+            )
+            .join("")
+        : `<div class="mini-label">서사 블럭이 없어. 아래 버튼으로 추가해 줘.</div>`;
+    }
+
+    function renderSongEditor() {
+      els.songEditorList.innerHTML = state.songs.length
+        ? state.songs
+            .map(
+              (song, index) => `
+                <div class="editor-card" data-song-editor="${song.id}">
+                  <div class="editor-card-head">
+                    <div class="editor-card-title">테마곡 ${index + 1}</div>
+
+                    <div class="small-actions">
+                      <button class="mini-btn danger" type="button" data-song-delete="${song.id}" title="삭제">×</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label>곡 제목</label>
+                    <input type="text" maxlength="60" value="${escapeHtml(song.title)}" data-song-field="${song.id}:title" />
+                  </div>
+
+                  <div class="field">
+                    <label>아티스트</label>
+                    <input type="text" maxlength="50" value="${escapeHtml(song.artist)}" data-song-field="${song.id}:artist" />
+                  </div>
+
+                  <div class="field">
+                    <label>앨범 커버</label>
+                    <input type="file" accept="image/*" data-song-cover="${song.id}" />
+                  </div>
+
+                  <div class="field">
+                    <label>음원 파일 — 선택</label>
+                    <input type="file" accept="audio/*" data-song-audio="${song.id}" />
+                    <span class="mini-label">${escapeHtml(song.audioName || "음원을 넣지 않아도 카드에는 표시돼.")}</span>
+                  </div>
+                </div>
+              `
+            )
+            .join("")
+        : `<div class="mini-label">테마곡이 없어. 아래 버튼으로 추가해 줘.</div>`;
+    }
+
+    function renderCharacter(side) {
+      const key = side === "A" ? "charA" : "charB";
+      const prefix = side === "A" ? "charA" : "charB";
+      const character = state[key];
+
+      setImage(
+        document.getElementById(`${prefix}Image`),
+        document.getElementById(`${prefix}Placeholder`),
+        character.image,
+        `${character.x}% ${character.y}%`
+      );
+
+      const credit = document.getElementById(`${prefix}CreditView`);
+      credit.textContent = character.credit ? `illust. ${character.credit}` : "";
+      credit.style.display = character.credit ? "block" : "none";
+
+      document.getElementById(`${prefix}RoleView`).textContent =
+        character.role || "CHARACTER";
+
+      document.getElementById(`${prefix}NameView`).textContent =
+        character.name || `Character ${side}`;
+
+      document.getElementById(`${prefix}IntroView`).textContent =
+        character.intro || "인물의 간단한 소개를 적어 줘.";
+
+      document.getElementById(`${prefix}QuoteView`).textContent =
+        character.quote || "이 인물을 상징하는 문장을 적어 줘.";
+
+      document.getElementById(`${prefix}TagsView`).innerHTML =
+        (character.tags.length ? character.tags : ["#character"])
+          .map((tag) => `<span class="profile-tag">${escapeHtml(tag)}</span>`)
+          .join("");
+    }
+
+    function renderCardStories() {
+      const count = state.stories.length;
+      const columns = getCardColumns(count);
+
+      els.storyGrid.className = `story-grid cols-${columns}`;
+      els.storyCount.textContent = `${count} SCENES`;
+
+      if (!count) {
+        els.storyGrid.innerHTML = `
+          <div class="story-empty">
+            서사 블럭이 아직 없어. 왼쪽 편집창에서 블럭을 추가해 줘.
+          </div>
+        `;
+        return;
+      }
+
+      els.storyGrid.innerHTML = state.stories
+        .map(
+          (story, index) => `
+            <article class="story-card">
+              <div class="story-visual">
+                ${
+                  story.image
+                    ? `<img src="${story.image}" alt="" style="object-position:${story.x}% ${story.y}%;" />`
+                    : `<div class="image-placeholder">✦</div>`
+                }
+
+                <div class="story-index">${String(index + 1).padStart(2, "0")}</div>
+
+                ${
+                  story.credit
+                    ? `<div class="image-credit">illust. ${escapeHtml(story.credit)}</div>`
+                    : ""
+                }
+              </div>
+
+              <div class="story-content">
+                <div class="story-time">${escapeHtml(story.time || "TIME UNKNOWN")}</div>
+                <h3>${escapeHtml(story.title || "제목 없는 서사")}</h3>
+                <p>${escapeHtml(story.description || "이 시기의 이야기를 적어 줘.")}</p>
+              </div>
+            </article>
+          `
+        )
+        .join("");
+    }
+
+    function renderTimelineStories() {
+      const count = state.stories.length;
+      els.timelineStoryCount.textContent = `${count} SCENES`;
+
+      const minWidth = Math.max(780, count * 272 + 60);
+      els.timelineTrack.style.width = `${minWidth}px`;
+
+      const axis = `<div class="timeline-axis"></div>`;
+
+      if (!count) {
+        els.timelineTrack.innerHTML = `
+          ${axis}
+          <div class="story-empty" style="position:absolute;left:50%;top:205px;width:420px;transform:translateX(-50%);">
+            서사 블럭이 아직 없어. 왼쪽 편집창에서 블럭을 추가해 줘.
+          </div>
+        `;
+        return;
+      }
+
+      const items = state.stories
+        .map((story, index) => {
+          const positionClass = index % 2 === 0 ? "is-bottom" : "is-top";
+
+          return `
+            <article class="timeline-item ${positionClass}">
+              <div class="timeline-card">
+                <div class="timeline-card-visual">
+                  ${
+                    story.image
+                      ? `<img src="${story.image}" alt="" style="object-position:${story.x}% ${story.y}%;" />`
+                      : `<div class="image-placeholder">✦</div>`
+                  }
+
+                  <div class="story-index">${String(index + 1).padStart(2, "0")}</div>
+
+                  ${
+                    story.credit
+                      ? `<div class="image-credit">illust. ${escapeHtml(story.credit)}</div>`
+                      : ""
+                  }
+                </div>
+
+                <div class="timeline-card-copy">
+                  <div class="story-time">${escapeHtml(story.time || "TIME UNKNOWN")}</div>
+                  <h3>${escapeHtml(story.title || "제목 없는 서사")}</h3>
+                  <p>${escapeHtml(story.description || "이 시기의 이야기를 적어 줘.")}</p>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      els.timelineTrack.innerHTML = axis + items;
+    }
+
+    function renderMusic() {
+      if (!state.songs.length) {
+        els.nowCover.removeAttribute("src");
+        els.nowCover.style.display = "none";
+        els.nowTitle.textContent = "No theme song";
+        els.nowArtist.textContent = "테마곡을 추가해 줘";
+        els.playlist.innerHTML = "";
+        return;
+      }
+
+      let active = state.songs.find((song) => song.id === state.activeSongId);
+
+      if (!active) {
+        active = state.songs[0];
+        state.activeSongId = active.id;
+      }
+
+      els.nowTitle.textContent = active.title || "Untitled Song";
+      els.nowArtist.textContent = active.artist || "Unknown Artist";
+
+      if (active.cover) {
+        els.nowCover.src = active.cover;
+        els.nowCover.style.display = "block";
+      } else {
+        els.nowCover.removeAttribute("src");
+        els.nowCover.style.display = "none";
+      }
+
+      els.playlist.innerHTML = state.songs
+        .map(
+          (song) => `
+            <div class="song-row ${song.id === state.activeSongId ? "active" : ""}">
+              <div class="song-thumb">
+                ${song.cover ? `<img src="${song.cover}" alt="" />` : ""}
+              </div>
+
+              <div class="song-info">
+                <div class="song-name">${escapeHtml(song.title || "Untitled Song")}</div>
+                <div class="song-artist">${escapeHtml(song.artist || "Unknown Artist")}</div>
+              </div>
+
+              <button
+                class="song-play"
+                type="button"
+                data-play-song="${song.id}"
+                aria-label="곡 재생"
+              >
+                ▶
+              </button>
+            </div>
+          `
+        )
+        .join("");
+    }
+
+    function renderPreview() {
+      const count = state.stories.length;
+      const width = getCanvasWidth(count, state.storyMode);
+      const layoutClass = getLayoutClass(count);
+      const modeClass = state.storyMode === "timeline" ? "mode-timeline" : "mode-cards";
+
+      document.documentElement.style.setProperty("--canvas-width", `${width}px`);
+
+      els.captureArea.className = `desktop-canvas ${state.theme}`.trim();
+      els.desktopGrid.className = `desktop-grid ${modeClass} ${layoutClass}`;
+
+      els.captureArea.style.setProperty(
+        "--wallpaper",
+        state.wallpaperImage ? `url("${state.wallpaperImage}")` : "none"
+      );
+
+      els.captureArea.style.setProperty(
+        "--wallpaper-opacity",
+        String(state.wallpaperOpacity / 100)
+      );
+
+      els.captureArea.style.setProperty(
+        "--wallpaper-blur",
+        `${state.wallpaperBlur}px`
+      );
+
+      els.captureArea.style.setProperty("--hero-x", `${state.heroX}%`);
+      els.captureArea.style.setProperty("--hero-y", `${state.heroY}%`);
+
+      els.menuPairName.textContent = state.pairName || "Untitled Pair";
+
+      const now = new Date();
+      els.menuDate.textContent =
+        `${String(now.getMonth() + 1).padStart(2, "0")}.` +
+        `${String(now.getDate()).padStart(2, "0")}`;
+
+      els.heroTitle.textContent = state.pairName || "PAIR NAME";
+      els.heroSubtitle.textContent =
+        state.pairSubtitle || "두 사람의 한 줄 소개를 적어 줘.";
+
+      setImage(
+        els.heroImage,
+        els.heroPlaceholder,
+        state.heroImage,
+        `${state.heroX}% ${state.heroY}%`
+      );
+
+      els.heroCreditView.textContent =
+        state.heroCredit ? `illust. ${state.heroCredit}` : "";
+
+      els.heroCreditView.style.display =
+        state.heroCredit ? "block" : "none";
+
+      els.anniversaryView.textContent =
+        state.anniversary ? `ANNIVERSARY · ${state.anniversary}` : "";
+
+      els.anniversaryView.style.display =
+        state.anniversary ? "inline-flex" : "none";
+
+      els.firstImpressionView.textContent =
+        state.firstImpression || "첫인상을 적어 줘.";
+
+      els.currentRelationView.textContent =
+        state.currentRelation || "현재 관계를 적어 줘.";
+
+      els.nicknamesView.textContent =
+        state.nicknames || "서로를 부르는 호칭을 적어 줘.";
+
+      setImage(
+        els.symbolImage,
+        els.symbolPlaceholder,
+        state.symbolImage,
+        `${state.symbolX}% ${state.symbolY}%`
+      );
+
+      els.symbolCreditView.textContent =
+        state.symbolCredit ? `illust. ${state.symbolCredit}` : "";
+
+      els.symbolCreditView.style.display =
+        state.symbolCredit ? "block" : "none";
+
+      els.symbolTextView.textContent =
+        state.symbolText || "둘을 상징하는 문구나 설명을 적어 줘.";
+
+      els.pairQuoteView.textContent =
+        state.pairQuote || "두 사람을 상징하는 문장을 적어 줘.";
+
+      els.tagList.innerHTML =
+        (state.pairTags.length ? state.pairTags : ["#pair"])
+          .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
+          .join("");
+
+      renderCharacter("A");
+      renderCharacter("B");
+      renderCardStories();
+      renderTimelineStories();
+      renderMusic();
+
+      const isTimeline = state.storyMode === "timeline";
+      els.cardStoryBoard.style.display = isTimeline ? "none" : "block";
+      els.timelineStoryBoard.style.display = isTimeline ? "block" : "none";
+    }
+
+    function hydrateEditor() {
+      baseFields.forEach(([id, key]) => {
+        document.getElementById(id).value = state[key] ?? "";
+      });
+
+      $("#heroX").value = state.heroX;
+      $("#heroY").value = state.heroY;
+      $("#wallpaperOpacity").value = state.wallpaperOpacity;
+      $("#wallpaperBlur").value = state.wallpaperBlur;
+      $("#symbolX").value = state.symbolX;
+      $("#symbolY").value = state.symbolY;
+      $("#themeSelect").value = state.theme;
+
+      $$('input[name="storyMode"]').forEach((radio) => {
+        radio.checked = radio.value === state.storyMode;
+      });
+
+      renderPairTagEditor();
+      renderCharacterEditors();
+      renderStoryEditor();
+      renderSongEditor();
+      renderPreview();
+    }
+
+    function addPairTag() {
+      const tag = normalizeTag(els.pairTagInput.value);
+      if (!tag) return;
+
+      if (!state.pairTags.includes(tag)) {
+        state.pairTags.push(tag);
+      }
+
+      els.pairTagInput.value = "";
+      renderPairTagEditor();
+      renderPreview();
+    }
+
+    function addCharacterTag(key, input) {
+      const tag = normalizeTag(input.value);
+      if (!tag || !state[key]) return;
+
+      if (!state[key].tags.includes(tag)) {
+        state[key].tags.push(tag);
+      }
+
+      renderCharacterEditors();
+      renderPreview();
+    }
+
+    function moveItem(list, id, direction) {
+      const index = list.findIndex((item) => item.id === id);
+      if (index < 0) return;
+
+      const target = index + direction;
+      if (target < 0 || target >= list.length) return;
+
+      [list[index], list[target]] = [list[target], list[index]];
+    }
+
+    function bindCharacterEditor(host) {
+      host.addEventListener("input", (event) => {
+        const meta = event.target.dataset.charField;
+        if (!meta) return;
+
+        const [key, field] = meta.split(":");
+        if (!state[key]) return;
+
+        state[key][field] =
+          event.target.type === "range"
+            ? Number(event.target.value)
+            : event.target.value;
+
+        renderPreview();
+      });
+
+      host.addEventListener("change", async (event) => {
+        const key = event.target.dataset.charImage;
+        const file = event.target.files?.[0];
+
+        if (!key || !file || !state[key]) return;
+
+        state[key].image = await readImage(file);
+        renderPreview();
+      });
+
+      host.addEventListener("click", (event) => {
+        const removeMeta = event.target.dataset.charTagRemove;
+        const addKey = event.target.dataset.charTagAdd;
+
+        if (removeMeta) {
+          const [key, indexText] = removeMeta.split(":");
+          if (!state[key]) return;
+
+          state[key].tags.splice(Number(indexText), 1);
+          renderCharacterEditors();
+          renderPreview();
+          return;
+        }
+
+        if (addKey) {
+          const input = host.querySelector(`[data-char-tag-input="${addKey}"]`);
+          if (input) addCharacterTag(addKey, input);
+        }
+      });
+
+      host.addEventListener("keydown", (event) => {
+        const key = event.target.dataset.charTagInput;
+        if (!key || event.key !== "Enter") return;
+
+        event.preventDefault();
+        addCharacterTag(key, event.target);
+      });
+    }
+
+    function playSong(id) {
+      const song = state.songs.find((item) => item.id === id);
+      if (!song) return;
+
+      state.activeSongId = id;
+      renderMusic();
+
+      if (!song.audioUrl) {
+        showToast("음원 파일을 업로드하면 여기서 재생할 수 있어.");
+        return;
+      }
+
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+
+      currentAudio = new Audio(song.audioUrl);
+      currentAudio.play().catch(() => {
+        showToast("브라우저가 재생을 막았어. 재생 버튼을 한 번 더 눌러 줘.");
+      });
+    }
+
+    async function waitForImages(root) {
+      const images = $$("img", root).filter((img) => img.src);
+
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) {
+                resolve();
+              } else {
+                img.onload = resolve;
+                img.onerror = resolve;
+              }
+            })
+        )
+      );
+    }
+
+    async function exportImage() {
+      const button = $("#exportBtn");
+      const oldText = button.textContent;
+
+      button.disabled = true;
+      button.textContent = "이미지 만드는 중…";
+
+      try {
+        if (document.fonts?.ready) {
+          await document.fonts.ready;
+        }
+
+        els.captureArea.classList.add("export-mode");
+
+        await new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        await waitForImages(els.captureArea);
+
+        const canvas = await html2canvas(els.captureArea, {
+          scale: 2,
+          backgroundColor: null,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          imageTimeout: 15000,
+          windowWidth: Math.max(1700, els.captureArea.scrollWidth + 100)
+        });
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/png", 1)
+        );
+
+        if (!blob) {
+          throw new Error("PNG 변환 실패");
+        }
+
+        if (exportObjectUrl) {
+          URL.revokeObjectURL(exportObjectUrl);
+        }
+
+        exportObjectUrl = URL.createObjectURL(blob);
+
+        const cleanName = (state.pairName || "pair-archive")
+          .replace(/[\\/:*?"<>|]/g, "")
+          .replace(/\s+/g, "-")
+          .slice(0, 40);
+
+        exportFilename = `${cleanName || "pair-archive"}.png`;
+
+        els.exportPreview.src = exportObjectUrl;
+        els.exportModal.classList.add("show");
+        showToast("저장 이미지가 완성됐어.");
+      } catch (error) {
+        console.error(error);
+        alert(
+          "이미지를 만드는 중 문제가 생겼어. 업로드한 이미지 용량을 조금 줄인 뒤 다시 시도해 줘."
+        );
+      } finally {
+        els.captureArea.classList.remove("export-mode");
+        button.disabled = false;
+        button.textContent = oldText;
+      }
+    }
+
+    baseFields.forEach(([id, key]) => {
+      document.getElementById(id).addEventListener("input", (event) => {
+        state[key] = event.target.value;
+        renderPreview();
+      });
+    });
+
+    $$('input[name="storyMode"]').forEach((radio) => {
+      radio.addEventListener("change", (event) => {
+        state.storyMode = event.target.value;
+        renderPreview();
+      });
+    });
+
+    $("#heroX").addEventListener("input", (event) => {
+      state.heroX = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#heroY").addEventListener("input", (event) => {
+      state.heroY = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#wallpaperOpacity").addEventListener("input", (event) => {
+      state.wallpaperOpacity = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#wallpaperBlur").addEventListener("input", (event) => {
+      state.wallpaperBlur = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#symbolX").addEventListener("input", (event) => {
+      state.symbolX = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#symbolY").addEventListener("input", (event) => {
+      state.symbolY = Number(event.target.value);
+      renderPreview();
+    });
+
+    $("#themeSelect").addEventListener("change", (event) => {
+      state.theme = event.target.value;
+      renderPreview();
+    });
+
+    $("#heroUpload").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      state.heroImage = await readImage(file);
+      renderPreview();
+    });
+
+    $("#wallpaperUpload").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      state.wallpaperImage = await readImage(file);
+      renderPreview();
+    });
+
+    $("#symbolUpload").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      state.symbolImage = await readImage(file);
+      renderPreview();
+    });
+
+    $("#addPairTagBtn").addEventListener("click", addPairTag);
+
+    els.pairTagInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+
+      event.preventDefault();
+      addPairTag();
+    });
+
+    els.pairTagEditor.addEventListener("click", (event) => {
+      const index = event.target.dataset.pairTagRemove;
+      if (index === undefined) return;
+
+      state.pairTags.splice(Number(index), 1);
+      renderPairTagEditor();
+      renderPreview();
+    });
+
+    bindCharacterEditor(els.charAEditor);
+    bindCharacterEditor(els.charBEditor);
+
+    els.storyEditorList.addEventListener("input", (event) => {
+      const meta = event.target.dataset.storyField;
+      if (!meta) return;
+
+      const [idText, field] = meta.split(":");
+      const story = state.stories.find(
+        (item) => item.id === Number(idText)
+      );
+
+      if (!story) return;
+
+      story[field] =
+        event.target.type === "range"
+          ? Number(event.target.value)
+          : event.target.value;
+
+      renderPreview();
+    });
+
+    els.storyEditorList.addEventListener("change", async (event) => {
+      const id = Number(event.target.dataset.storyImage);
+      const file = event.target.files?.[0];
+
+      if (!id || !file) return;
+
+      const story = state.stories.find((item) => item.id === id);
+      if (!story) return;
+
+      story.image = await readImage(file);
+      renderPreview();
+    });
+
+    els.storyEditorList.addEventListener("click", (event) => {
+      const upId = Number(event.target.dataset.storyUp);
+      const downId = Number(event.target.dataset.storyDown);
+      const deleteId = Number(event.target.dataset.storyDelete);
+
+      if (upId) {
+        moveItem(state.stories, upId, -1);
+        renderStoryEditor();
+        renderPreview();
+        return;
+      }
+
+      if (downId) {
+        moveItem(state.stories, downId, 1);
+        renderStoryEditor();
+        renderPreview();
+        return;
+      }
+
+      if (deleteId) {
+        state.stories = state.stories.filter(
+          (item) => item.id !== deleteId
+        );
+
+        renderStoryEditor();
+        renderPreview();
+      }
+    });
+
+    $("#addStoryBtn").addEventListener("click", () => {
+      const id = nextId();
+
+      state.stories.push({
+        id,
+        time: "새로운 시기",
+        title: "새로운 서사",
+        description:
+          "이 시기의 이야기를 적어 줘. 가로 카드형에서는 긴 글이 그대로 표시되고, 타임라인형에서는 일정 길이까지만 보여 줘.",
+        image: "",
+        credit: "",
+        x: 50,
+        y: 50
+      });
+
+      renderStoryEditor();
+      renderPreview();
+
+      requestAnimationFrame(() => {
+        $(`[data-story-editor="${id}"]`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
+      });
+    });
+
+    els.songEditorList.addEventListener("input", (event) => {
+      const meta = event.target.dataset.songField;
+      if (!meta) return;
+
+      const [idText, field] = meta.split(":");
+      const song = state.songs.find(
+        (item) => item.id === Number(idText)
+      );
+
+      if (!song) return;
+
+      song[field] = event.target.value;
+      renderMusic();
+    });
+
+    els.songEditorList.addEventListener("change", async (event) => {
+      const coverId = Number(event.target.dataset.songCover);
+      const audioId = Number(event.target.dataset.songAudio);
+      const file = event.target.files?.[0];
+
+      if (!file) return;
+
+      if (coverId) {
+        const song = state.songs.find((item) => item.id === coverId);
+        if (!song) return;
+
+        song.cover = await readImage(file);
+        renderMusic();
+      }
+
+      if (audioId) {
+        const song = state.songs.find((item) => item.id === audioId);
+        if (!song) return;
+
+        if (song.audioUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(song.audioUrl);
+        }
+
+        song.audioUrl = URL.createObjectURL(file);
+        song.audioName = file.name;
+
+        renderSongEditor();
+        renderMusic();
+      }
+    });
+
+    els.songEditorList.addEventListener("click", (event) => {
+      const deleteId = Number(event.target.dataset.songDelete);
+      if (!deleteId) return;
+
+      const song = state.songs.find((item) => item.id === deleteId);
+
+      if (song?.audioUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(song.audioUrl);
+      }
+
+      state.songs = state.songs.filter(
+        (item) => item.id !== deleteId
+      );
+
+      if (state.activeSongId === deleteId) {
+        state.activeSongId = state.songs[0]?.id ?? null;
+      }
+
+      renderSongEditor();
+      renderMusic();
+    });
+
+    $("#addSongBtn").addEventListener("click", () => {
+      const id = nextId();
+
+      state.songs.push({
+        id,
+        title: "New Theme Song",
+        artist: "Artist Name",
+        cover: "",
+        audioUrl: "",
+        audioName: ""
+      });
+
+      if (!state.activeSongId) {
+        state.activeSongId = id;
+      }
+
+      renderSongEditor();
+      renderMusic();
+
+      requestAnimationFrame(() => {
+        $(`[data-song-editor="${id}"]`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
+      });
+    });
+
+    els.playlist.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-play-song]");
+      if (!button) return;
+
+      playSong(Number(button.dataset.playSong));
+    });
+
+    $("#exportBtn").addEventListener("click", exportImage);
+
+    $("#downloadExportBtn").addEventListener("click", () => {
+      if (!exportObjectUrl) return;
+
+      const link = document.createElement("a");
+      link.href = exportObjectUrl;
+      link.download = exportFilename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
+
+    $("#openExportBtn").addEventListener("click", () => {
+      if (exportObjectUrl) {
+        window.open(exportObjectUrl, "_blank", "noopener,noreferrer");
+      }
+    });
+
+    $("#closeExportBtn").addEventListener("click", () => {
+      els.exportModal.classList.remove("show");
+    });
+
+    els.exportModal.addEventListener("click", (event) => {
+      if (event.target === els.exportModal) {
+        els.exportModal.classList.remove("show");
+      }
+    });
+
+    $("#resetBtn").addEventListener("click", () => {
+      const confirmed = confirm(
+        "현재 입력한 내용을 지우고 예시 상태로 되돌릴까?"
+      );
+
+      if (!confirmed) return;
+
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+
+      state.songs.forEach((song) => {
+        if (song.audioUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(song.audioUrl);
+        }
+      });
+
+      state = defaultState();
+
+      $("#heroUpload").value = "";
+      $("#wallpaperUpload").value = "";
+      $("#symbolUpload").value = "";
+
+      hydrateEditor();
+    });
+
+    hydrateEditor();
+  </script>
+</body>
+</html>
