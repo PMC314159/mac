@@ -66,6 +66,11 @@ export default async function handler(request, response) {
 
     const page = await browser.newPage();
 
+    await page.setExtraHTTPHeaders({
+      "Accept-Language":
+        "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+    });
+
     await page.setViewport({
       width,
       height: 1200,
@@ -78,7 +83,22 @@ export default async function handler(request, response) {
     });
 
     await page.evaluate(async () => {
-      if (document.fonts?.ready) {
+      if (document.fonts) {
+        await Promise.allSettled([
+          document.fonts.load(
+            '400 16px "Noto Sans KR"',
+            "한글 漢字"
+          ),
+          document.fonts.load(
+            '700 16px "Noto Sans KR"',
+            "한글 漢字"
+          ),
+          document.fonts.load(
+            '900 16px "Noto Sans KR"',
+            "한글 漢字"
+          )
+        ]);
+
         await document.fonts.ready;
       }
 
